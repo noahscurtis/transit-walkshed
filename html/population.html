@@ -49,7 +49,7 @@
         });
 
         async function geojsonFetch() {
-            let response = await fetch('Data/2020population_4326.geojson');
+            let response = await fetch('assets/census_blocks.geojson');
             let population = await response.json();
 
             map.addSource('population', {
