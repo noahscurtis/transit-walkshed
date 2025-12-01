@@ -1,88 +1,65 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <meta charset="utf-8">
-    <title>Interactive Web Mapping</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
-    <style>
-        h2, h3 {
-            margin: 10px;
-            font-size: 18px;
-        }
-
-        h3 {
-            font-size: 16px;
-        }
-
-        p {
-            margin: 10px;
-        }
-
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>Dissolve Population by Each Stop</title>
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 </head>
-
 <body>
-    <div id="map"></div>
-    <div class='map-overlay' id='features'>
-        <h2>Seattle Population!</h2>
-    </div>
-    <div class='map-overlay' id='legend'></div>
-    <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoianZhbmxhcmUiLCJhIjoiY21oY2Zrd29nMTN2dDJtcHh5YzlxYWVtNSJ9.bP5BGQT-tdmmsC1SStqvNw';
 
-        const map = new mapboxgl.Map({
-            container: 'map', 
-            style: 'mapbox://styles/mapbox/light-v10', 
-            zoom: 10, 
-            center: [-122.335167, 47.608013] 
-        });
+<h1>Dissolving Population by Stop…</h1>
+<pre id="output">Processing…</pre>
 
-        async function geojsonFetch() {
-            let response = await fetch('assets/census_blocks.geojson');
-            let population = await response.json();
+<script>
+const populationURL = "https://raw.githubusercontent.com/turnert447/transit-walkshed/main/assets/data/2020population.geojson";
+const rrStopsURL     = "https://raw.githubusercontent.com/turnert447/transit-walkshed/main/assets/data/stops/RR_stops.geojson";
+const linkStopsURL   = "https://raw.githubusercontent.com/turnert447/transit-walkshed/main/assets/data/lines/link_stops.geojson";
 
-            map.addSource('population', {
-                type: 'geojson',
-                data: population
-            });
+async function loadJSON(url) {
+    const res = await fetch(url);
+    return res.json();
+}
 
-            map.addLayer({
-                id: 'population-layer',
-                type: 'fill',
-                source: 'population',
-                paint: {
-                  'fill-color': [
-                    'interpolate',
-                    ['linear'],
-                    ['get', 'TOTAL_POPULATION'],
-                    0, '#ffffcc',
-                    500, '#a1dab4',
-                    1000, '#41b6c4',
-                    2000, '#2c7fb8',
-                    4000, '#253494'
-                  ],
-                  'fill-opacity': 0.7,
-                  'fill-outline-color': '#000'
-                }
-          });
+async function main() {
+    const population = await loadJSON(populationURL);
+    const rrStops = await loadJSON(rrStopsURL);
+    const linkStops = await loadJSON(linkStopsURL);
 
-        }
+    const allStops = [...rrStops.features, ...linkStops.features];
 
-        map.on('load', geojsonFetch);
+    const outputFeatures = [];
 
-    </script>
+    for (const stop of allStops) {
+        // 1. Find population polygons that contain this stop
+        const polysForThisStop = population.features.filter(poly =>
+            turf.booleanPointInPolygon(stop, poly)
+        );
+
+        if (polysForThisStop.length === 0) continue;
+
+        // 2. Convert to MultiPolygon
+        const combined = turf.combine(turf.featureCollection(polysForThisStop));
+
+        // 3. Dissolve MultiPolygon into a single shape
+        const dissolved = turf.dissolve(combined);
+
+        // 4. Add stop ID as metadata
+        dissolved.properties = {
+            stop_id: stop.properties.stop_id || null,
+            stop_name: stop.properties.stop_name || null
+        };
+
+        outputFeatures.push(dissolved);
+    }
+
+    const finalGeoJSON = turf.featureCollection(outputFeatures);
+
+    document.getElementById("output").textContent =
+        JSON.stringify(finalGeoJSON, null, 2);
+}
+
+main();
+</script>
 
 </body>
-
 </html>
