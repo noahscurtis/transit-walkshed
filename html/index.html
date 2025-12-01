@@ -100,9 +100,9 @@
     <h3>🚇 Transit Walksheds</h3>
     
     <h4>Walkshed Distance</h4>
-    <label><input type="radio" name="buffer" value="1320" checked> ¼ mi (~5 min walk)</label>
-    <label><input type="radio" name="buffer" value="2640"> ½ mi (~10 min walk)</label>
-    <label><input type="radio" name="buffer" value="3960"> ¾ mi (~15 min walk)</label>
+    <label><input type="radio" name="buffer" value="1320" checked> 0.25 mi (5 min walk)</label>
+    <label><input type="radio" name="buffer" value="2640"> 0.5 mi (10 min walk)</label>
+    <label><input type="radio" name="buffer" value="3960"> 0.75 mi (15 min walk)</label>
     
     <h4>Population Density</h4>
     <div class="color-scale">
@@ -152,18 +152,20 @@ const map = new mapboxgl.Map({
 const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
 const linkStopsURL = "../assets/data/stops/link_stops.geojson";
 const populationURL = "../assets/data/2020population_4326.geojson";
+const linkLineURL = "../assets/data/lines/link_line.geojson";
+const rrLineURL = "../assets/data/lines/rr_existing.geojson";
 
 const colorScale = [
     [0, '#ffffcc'],
-    [1300, '#c7e9b4'],
-    [2600, '#7fcdbb'],
-    [6500, '#41b6c4'],
-    [13000, '#1d91c0'],
-    [26000, '#225ea8'],
-    [52000, '#0c2c84']
+    [2500, '#c7e9b4'],
+    [5000, '#7fcdbb'],
+    [10000, '#41b6c4'],
+    [20000, '#1d91c0'],
+    [40000, '#225ea8'],
+    [80000, '#0c2c84']
 ];
 
-let populationData, rrStopsData, linkStopsData;
+let populationData, rrStopsData, linkStopsData, linkLineData, rrLineData;
 let currentBuffer = 1320;
 let cache = {};
 
@@ -190,15 +192,24 @@ function calculateClippedPopulation(censusFeature, clippedFeature) {
 }
 
 function createUnifiedBuffer(stops, radius) {
-    if (!stops.features || stops.features.length === 0) return null;
+    if (!stops.features || stops.features.length === 0) {
+        console.warn('No stops provided for buffer creation');
+        return null;
+    }
+    
+    console.log(`Creating buffer for ${stops.features.length} stops at ${radius} feet`);
     
     const buffers = [];
-    stops.features.forEach((stop) => {
+    stops.features.forEach((stop, i) => {
         try {
             const buffer = turf.buffer(stop, radius, { units: 'feet' });
             if (buffer && buffer.geometry) buffers.push(buffer);
-        } catch (e) {}
+        } catch (e) {
+            console.warn(`Buffer failed for stop ${i}:`, e);
+        }
     });
+    
+    console.log(`Created ${buffers.length} individual buffers`);
     
     if (buffers.length === 0) return null;
     
@@ -207,9 +218,12 @@ function createUnifiedBuffer(stops, radius) {
         try {
             const result = turf.union(unified, buffers[i]);
             if (result) unified = result;
-        } catch (e) {}
+        } catch (e) {
+            console.warn(`Union failed at ${i}:`, e);
+        }
     }
     
+    console.log('Unified buffer created successfully');
     return unified;
 }
 
@@ -351,10 +365,12 @@ map.on('load', async () => {
     try {
         document.getElementById('loading').textContent = 'Loading data files...';
         
-        [rrStopsData, linkStopsData, populationData] = await Promise.all([
+        [rrStopsData, linkStopsData, populationData, linkLineData, rrLineData] = await Promise.all([
             loadJSON(rrStopsURL),
             loadJSON(linkStopsURL),
-            loadJSON(populationURL)
+            loadJSON(populationURL),
+            loadJSON(linkLineURL),
+            loadJSON(rrLineURL)
         ]);
 
         document.getElementById('loading').textContent = 'Processing walksheds...';
@@ -378,6 +394,8 @@ map.on('load', async () => {
 
         map.addSource('link-stops', { type: 'geojson', data: linkStopsData });
         map.addSource('rr-stops', { type: 'geojson', data: rrStopsData });
+        map.addSource('link-line', { type: 'geojson', data: linkLineData });
+        map.addSource('rr-line', { type: 'geojson', data: rrLineData });
 
         map.addLayer({
             id: 'census-choropleth',
@@ -404,6 +422,28 @@ map.on('load', async () => {
             type: 'line',
             source: 'buffer-outline',
             paint: { 'line-color': '#333', 'line-width': 2, 'line-dasharray': [2, 2] }
+        });
+
+        map.addLayer({
+            id: 'rr-line-layer',
+            type: 'line',
+            source: 'rr-line',
+            paint: {
+                'line-color': '#c62828',
+                'line-width': 2.5,
+                'line-opacity': 0.9
+            }
+        });
+
+        map.addLayer({
+            id: 'link-line-layer',
+            type: 'line',
+            source: 'link-line',
+            paint: {
+                'line-color': '#1565c0',
+                'line-width': 3,
+                'line-opacity': 0.9
+            }
         });
 
         map.addLayer({
@@ -479,11 +519,15 @@ map.on('load', async () => {
         document.getElementById('show-link').addEventListener('change', () => {
             updateStopLayerVisibility();
             recalculateWalkshed();
+            const showLink = document.getElementById('show-link').checked;
+            map.setLayoutProperty('link-line-layer', 'visibility', showLink ? 'visible' : 'none');
         });
 
         document.getElementById('show-rr').addEventListener('change', () => {
             updateStopLayerVisibility();
             recalculateWalkshed();
+            const showRR = document.getElementById('show-rr').checked;
+            map.setLayoutProperty('rr-line-layer', 'visibility', showRR ? 'visible' : 'none');
         });
 
         document.getElementById('show-stops').addEventListener('change', updateStopLayerVisibility);
