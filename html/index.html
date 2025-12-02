@@ -151,7 +151,7 @@ const map = new mapboxgl.Map({
 
 const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
 const linkStopsURL = "../assets/data/stops/link_stops.geojson";
-const populationURL = "../assets/data/2020population_4326.geojson";
+const populationURL = "../assets/data/population/2020population_4326.geojson";
 const linkLineURL = "../assets/data/lines/link_line.geojson";
 const rrLineURL = "../assets/data/lines/rr_existing.geojson";
 
@@ -303,6 +303,8 @@ function updateStats(data) {
     document.getElementById('total-pop').textContent = data.totalPopulation.toLocaleString();
     document.getElementById('total-area').textContent = data.bufferArea.toFixed(2);
 }
+
+
 
 function updateStopLayerVisibility() {
     const showStops = document.getElementById('show-stops').checked;
