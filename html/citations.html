@@ -1,88 +1,276 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Data Sources & Citations</title>
-<link rel="stylesheet" href="../css/style.css">
-<style>
-    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-    .container { max-width: 900px; margin: 0 auto; text-align: center; }
-    h1 { margin-bottom: 10px; }
-    h2 { margin-top: 25px; color: #444; }
-    .source { margin-bottom: 18px; text-align: left; }
-    a { color: #337ab7; }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Sources & Citations</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
 
-    /* NEW — minimal indent formatting */
-    .source-detail {
-        margin-left: 40px;
-        display: block;
-    }
-</style>
+        #map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            filter: blur(3px);
+            z-index: 1;
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            color: #00A651;
+            margin: 0 0 10px 0;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #555;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: white;
+            background: #00A651;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0, 166, 81, 0.3);
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background: #00913f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 166, 81, 0.4);
+        }
+
+        .section {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .section h2 {
+            color: #00A651;
+            margin: 0 0 15px 0;
+            font-size: 1.3rem;
+        }
+
+        .source {
+            margin-bottom: 18px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .source:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .source strong {
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .source-detail {
+            margin-left: 0;
+            margin-top: 6px;
+            display: block;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .source-detail code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.85rem;
+        }
+
+        a {
+            color: #00A651;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .content {
+                padding: 40px 15px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
-
 <body>
 
-<h1>Data Sources & Citations</h1>
-<p>This page documents all datasets and tools used in the creation of our Transit Walkshed Analysis project.</p>
+<div id="map"></div>
 
-<h2>Geospatial Datasets</h2>
+<div id="overlay">
+    <div class="content">
+        <div class="header">
+            <h1>Data Sources & Citations</h1>
+            <p>All datasets and tools used in the creation of the Transit Walkshed Analysis project.</p>
+            <a href="index_2025.html" class="back-btn">← Back to Maps</a>
+        </div>
 
-<div class="source">
-    <strong>Seattle City Limits (city_limits.geojson)</strong>
-    <div class="source-detail">Source: <a href="https://data-seattlecitygis.opendata.arcgis.com/" target="_blank">Seattle GeoData Portal</a></div>
-    <div class="source-detail">Usage: Used to clip transit stops and population layers to the Seattle boundary.</div>
+        <div class="section">
+            <h2>Geospatial Datasets</h2>
+
+            <div class="source">
+                <strong>Seattle City Limits</strong>
+                <span class="source-detail">Source: <a href="https://data-seattlecitygis.opendata.arcgis.com/" target="_blank">Seattle GeoData Portal</a></span>
+                <span class="source-detail">Usage: Used to clip transit stops and population layers to the Seattle boundary.</span>
+            </div>
+
+            <div class="source">
+                <strong>2020 Census Population</strong>
+                <span class="source-detail">Source: <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html" target="_blank">U.S. Census Bureau — TIGER/Line 2020 Census Blocks</a></span>
+                <span class="source-detail">Processing: Cleaned and filtered in <code>census.ipynb</code> to extract population values and reproject to EPSG:4326.</span>
+                <span class="source-detail">Usage: Supports population density visualization and statistics for walksheds.</span>
+            </div>
+
+            <div class="source">
+                <strong>Link Light Rail Data</strong>
+                <span class="source-detail">Source: <a href="https://www.soundtransit.org" target="_blank">Sound Transit GTFS Feed</a></span>
+                <span class="source-detail">Processing: Stops pulled from <code>stops.txt</code>; alignments derived from <code>shapes.txt</code>.</span>
+                <span class="source-detail">Usage: Mapping Link Light Rail segments and stations.</span>
+            </div>
+
+            <div class="source">
+                <strong>RapidRide Data</strong>
+                <span class="source-detail">Source: <a href="https://kingcounty.gov/depts/transportation/metro/travel-options/gtfs.aspx" target="_blank">King County Metro GTFS Feed</a></span>
+                <span class="source-detail">Usage: Visualizing RapidRide routes (existing and planned) and associated stops.</span>
+            </div>
+
+            <div class="source">
+                <strong>Transit Stops Within Seattle</strong>
+                <span class="source-detail">Source: Derived internally from GTFS stop data and clipped using Seattle city limits boundary.</span>
+                <span class="source-detail">Usage: Supports stop-level accessibility and walkshed calculations.</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Tools & Libraries</h2>
+
+            <div class="source">
+                <strong>Mapbox GL JS</strong>
+                <span class="source-detail"><a href="https://docs.mapbox.com/mapbox-gl-js/" target="_blank">https://docs.mapbox.com/mapbox-gl-js/</a></span>
+            </div>
+
+            <div class="source">
+                <strong>Turf.js</strong>
+                <span class="source-detail"><a href="https://turfjs.org/" target="_blank">https://turfjs.org/</a></span>
+            </div>
+
+            <div class="source">
+                <strong>GitHub Pages</strong>
+                <span class="source-detail">Web hosting and direct serving of GeoJSON datasets</span>
+            </div>
+
+            <div class = "source">
+                <strong>Jupyter Notebooks</strong>
+                <span class="source-detail"><a href="https://jupyter.org/" target="_blank">https://jupyter.org/</a></span>
+            </div>
+
+            <div class = "source">
+                <strong>QGIS</strong>
+                <span class="source-detail"><a href="https://qgis.org/" target="_blank">https://qgis.org/</a></span>
+            </div>
+        </div>
+
+
+        <div class="section">
+            <h2>Project Team</h2>
+            <p style="margin: 0; color: #444;">
+                <strong>Rayne Thompson, Noah Curtis, Jay Van Lare, Jishnu Kandala</strong><br>
+                GEOG 328 — Web GIS Final Project<br>
+                University of Washington
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>AI Disclosure</h2>
+            <p style="margin: 0; color: #444;">
+                <strong>Rayne:</strong> Base functionality of the turf buffering, population data, and website functionality was done manually. AI was used to perform the population calculations within the buffer zones, and to add enhanced website interactivity, optimizing for design and usability. AI was also consulted during the data cleaning portion in Jupyter to find the best workflow for data cleanliness and accuracy. </strong><br>
+                <strong>Jay: </strong><br>
+                <strong>Noah: </strong><br>
+                <strong>Jishnu: </strong><br>
+            </p>
+        </div>
+
+        <footer>
+            <a href="home.html">Home</a> · <a href="index_2025.html">2025 Analysis</a> · <a href="index_2050.html">2050 Analysis</a>
+        </footer>
+    </div>
 </div>
 
-<div class="source">
-    <strong>2020 Census Population (2020population_4326.geojson, census.blocks.geojson)</strong>
-    <div class="source-detail">Source: <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html" target="_blank">U.S. Census Bureau — TIGER/Line 2020 Census Blocks</a></div>
-    <div class="source-detail">Processing: Cleaned and filtered in <code>census.ipynb</code> to extract population values and reproject to EPSG:4326.</div>
-    <div class="source-detail">Usage: Supports population density visualization and statistics for walksheds.</div>
-</div>
-
-<div class="source">
-    <strong>Link Light Rail Data (link_line.geojson, link_stops.geojson)</strong>
-    <div class="source-detail">Source: <a href="https://www.soundtransit.org" target="_blank">Sound Transit GTFS Feed</a></div>
-    <div class="source-detail">Processing: Stops pulled from <code>stops.txt</code>; alignments derived from <code>shapes.txt</code>.</div>
-    <div class="source-detail">Usage: Mapping Link Light Rail segments and stations.</div>
-</div>
-
-<div class="source">
-    <strong>RapidRide Data (rr_existing.geojson, rr_planned.geojson, RR_stops.geojson)</strong>
-    <div class="source-detail">Source: <a href="https://kingcounty.gov/depts/transportation/metro/travel-options/gtfs.aspx" target="_blank">King County Metro GTFS Feed</a></div>
-    <div class="source-detail">Usage: Visualizing RapidRide routes (existing and planned) and associated stops.</div>
-</div>
-
-<div class="source">
-    <strong>Transit Stops Within Seattle (RR_stops_citylimits.geojson)</strong>
-    <div class="source-detail">Source: Derived internally from GTFS stop data and clipped using Seattle city limits boundary.</div>
-    <div class="source-detail">Usage: Supports stop-level accessibility and walkshed calculations.</div>
-</div>
-
-<h2>Tools, Libraries, and Web Services</h2>
-
-<div class="source">
-    <strong>Mapbox GL JS</strong>
-    <div class="source-detail"><a href="https://docs.mapbox.com/mapbox-gl-js/" target="_blank">https://docs.mapbox.com/mapbox-gl-js/</a></div>
-</div>
-
-<div class="source">
-    <strong>Turf.js</strong>
-    <div class="source-detail"><a href="https://turfjs.org/" target="_blank">https://turfjs.org/</a></div>
-</div>
-
-<div class="source">
-    <strong>GitHub Pages</strong>
-    <div class="source-detail">Web hosting and direct serving of GeoJSON datasets</div>
-</div>
-
-<h2>Project Team</h2>
-<p>
-    Created by: <strong>Rayne Thompson, Noah Curtis, Jay Van Lare, Jishnu Kandala</strong><br>
-    GEOG 328 — Web GIS Final Project<br>
-    University of Washington
-</p>
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoidHRob21wNCIsImEiOiJjbWg4ZnZ4cTUxMGQ5MmtwdWR4MTNnbm40In0.JHg_sbayM5UCtQkYhC2LEA';
+    
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v10',
+        center: [-122.33, 47.62],
+        zoom: 11,
+        interactive: false
+    });
+</script>
 
 </body>
 </html>
