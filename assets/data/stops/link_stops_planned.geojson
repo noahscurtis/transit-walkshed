@@ -1,0 +1,246 @@
+{
+  "type": "FeatureCollection",
+  "name": "Planned Link Light Rail Stops (2025-2044)",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Judkins Park Station",
+        "stop_id": "2LINE-JUDK",
+        "line": "2 Line (East Link)",
+        "status": "opening 2026",
+        "target_year": 2026,
+        "notes": "Rainier Ave S & S Massachusetts St"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3034, 47.5908]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Ballard Station",
+        "stop_id": "BLE-BALL",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "14th Ave NW & NW Market St"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3756, 47.6686]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Interbay Station",
+        "stop_id": "BLE-INTB",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "17th Ave W & W Dravus St"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3768, 47.6480]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Smith Cove Station",
+        "stop_id": "BLE-SMCO",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "Near W Galer St & Elliott Ave W"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3785, 47.6365]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Seattle Center Station",
+        "stop_id": "BLE-SECA",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "Near Republican St & 1st Ave N"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3560, 47.6218]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "South Lake Union Station",
+        "stop_id": "BLE-SLU",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "Harrison St & Terry Ave N"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3375, 47.6225]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Denny Station",
+        "stop_id": "BLE-DENY",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "Denny Way & Westlake Ave"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3380, 47.6190]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Westlake Station (New Tunnel)",
+        "stop_id": "BLE-WSTL",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "New downtown tunnel station"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3375, 47.6113]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Midtown Station",
+        "stop_id": "BLE-MIDT",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "5th Ave & Madison St area"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3310, 47.6070]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Chinatown-Int'l District Station (New)",
+        "stop_id": "BLE-CID",
+        "line": "Ballard Link Extension",
+        "status": "planned",
+        "target_year": 2039,
+        "notes": "New station in CID area"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3275, 47.5985]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "SODO Station (West Seattle)",
+        "stop_id": "WSL-SODO",
+        "line": "West Seattle Link Extension",
+        "status": "planned",
+        "target_year": 2032,
+        "notes": "New SODO station for West Seattle branch"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3340, 47.5805]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Delridge Station",
+        "stop_id": "WSL-DELR",
+        "line": "West Seattle Link Extension",
+        "status": "planned",
+        "target_year": 2032,
+        "notes": "Delridge Way SW"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3635, 47.5630]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Avalon Station",
+        "stop_id": "WSL-AVAL",
+        "line": "West Seattle Link Extension",
+        "status": "planned",
+        "target_year": 2032,
+        "notes": "35th Ave SW & SW Avalon Way"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3705, 47.5600]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Alaska Junction Station",
+        "stop_id": "WSL-ALAS",
+        "line": "West Seattle Link Extension",
+        "status": "planned",
+        "target_year": 2032,
+        "notes": "California Ave SW & SW Alaska St"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3875, 47.5605]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Graham Street Station",
+        "stop_id": "INF-GRAH",
+        "line": "1 Line Infill",
+        "status": "planned",
+        "target_year": 2031,
+        "notes": "S Graham St infill station"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.2965, 47.5350]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "stop_name": "Pinehurst Station",
+        "stop_id": "INF-PINE",
+        "line": "1 Line Infill",
+        "status": "planned",
+        "target_year": 2026,
+        "notes": "NE 130th St infill station"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3275, 47.7165]
+      }
+    }
+  ]
+}

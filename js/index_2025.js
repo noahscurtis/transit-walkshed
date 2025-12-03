@@ -163,13 +163,17 @@ function updateStats(data, isFullCity = false) {
     document.getElementById('total-pop').textContent = data.totalPopulation.toLocaleString();
     document.getElementById('total-area').textContent = data.bufferArea.toFixed(2);
     
-    if (isFullCity) {
-        document.getElementById('pct-seattle').textContent = '100%';
-    } else {
-        const pctSeattle = seattleTotalPop > 0 
-            ? ((data.totalPopulation / seattleTotalPop) * 100).toFixed(1)
-            : '0';
-        document.getElementById('pct-seattle').textContent = pctSeattle + '%';
+    // Update percentage of Seattle (if element exists)
+    const pctElement = document.getElementById('pct-seattle');
+    if (pctElement) {
+        if (isFullCity) {
+            pctElement.textContent = '100%';
+        } else {
+            const pctSeattle = seattleTotalPop > 0 
+                ? ((data.totalPopulation / seattleTotalPop) * 100).toFixed(1)
+                : '0';
+            pctElement.textContent = pctSeattle + '%';
+        }
     }
 }
 
@@ -189,6 +193,7 @@ async function recalculateWalkshed() {
     const radius = currentBuffer;
     const cacheKey = getCacheKey(showLink, showRR, radius);
     
+    // Check cache first
     if (cache[cacheKey]) {
         const data = cache[cacheKey];
         map.getSource('clipped-census').setData(data.geojson);
@@ -197,24 +202,15 @@ async function recalculateWalkshed() {
         return;
     }
     
+    // No transit selected - show full city
     if (stops.features.length === 0) {
-        const emptyData = { 
-            geojson: turf.featureCollection([]), 
-            totalPopulation: 0, 
-            bufferArea: 0,
-            bufferGeom: turf.featureCollection([])
-        };
-        map.getSource('clipped-census').setData(emptyData.geojson);
-        map.getSource('buffer-outline').setData(emptyData.bufferGeom);
-        updateStats(null);
-        cache[cacheKey] = emptyData;
-        // Show full city choropleth when no transit selected
         map.getSource('clipped-census').setData(fullCityData.geojson);
         map.getSource('buffer-outline').setData(turf.featureCollection([]));
         updateStats(fullCityData, true);
         return;
     }
     
+    // Calculate new walkshed
     document.getElementById('processing').style.display = 'block';
     await new Promise(resolve => setTimeout(resolve, 10));
     
@@ -235,9 +231,11 @@ async function recalculateWalkshed() {
 }
 
 map.on('load', async () => {
+    // Reset checkboxes to unchecked on page load
     document.getElementById('show-link').checked = false;
     document.getElementById('show-rr').checked = false;
     document.getElementById('show-stops').checked = false;
+
     try {
         document.getElementById('loading').textContent = 'Loading data files...';
         
@@ -283,17 +281,9 @@ map.on('load', async () => {
             bufferArea: totalArea
         };
 
-
-            const initialData = fullCityData;
-            cache[getCacheKey(false, false, 1320)] = { 
-                geojson: turf.featureCollection([]), 
-                totalPopulation: 0, 
-                bufferArea: 0,
-                bufferGeom: turf.featureCollection([])
-            };
-
         document.getElementById('loading').style.display = 'none';
 
+        // Initialize with full city data (no transit selected)
         map.addSource('clipped-census', {
             type: 'geojson',
             data: fullCityData.geojson
@@ -352,7 +342,7 @@ map.on('load', async () => {
             type: 'line',
             source: 'link-line',
             paint: {
-                'line-color': '#1565c0',
+                'line-color': '#00A651',
                 'line-width': 3,
                 'line-opacity': 0.9
             }
@@ -364,7 +354,7 @@ map.on('load', async () => {
             source: 'link-stops',
             paint: {
                 'circle-radius': 6,
-                'circle-color': '#1565c0',
+                'circle-color': '#00A651',
                 'circle-stroke-color': '#fff',
                 'circle-stroke-width': 2
             }
@@ -382,10 +372,13 @@ map.on('load', async () => {
             }
         });
 
+        // Hide all transit layers by default
         map.setLayoutProperty('link-line-layer', 'visibility', 'none');
         map.setLayoutProperty('rr-line-layer', 'visibility', 'none');
         map.setLayoutProperty('link-stops-layer', 'visibility', 'none');
         map.setLayoutProperty('rr-stops-layer', 'visibility', 'none');
+
+        // Show full city stats
         updateStats(fullCityData, true);
 
         const popup = new mapboxgl.Popup({ closeButton: true, closeOnClick: true });
@@ -398,8 +391,7 @@ map.on('load', async () => {
                     <div class="popup-info">
                         <strong>Population:</strong> ${props.clipped_population?.toLocaleString() || 'N/A'}<br>
                         <strong>Density:</strong> ${props.density?.toLocaleString() || 'N/A'} /mi²<br>
-                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²<br>
-                        <strong>Growth Rate:</strong> ${props.avg_growth_pct ? (props.avg_growth_pct * 100).toFixed(2) + '%' : 'N/A'} /yr
+                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²
                     </div>
                 `)
                 .addTo(map);
@@ -426,6 +418,7 @@ map.on('load', async () => {
             map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
         });
 
+        // Buffer distance radio buttons
         document.querySelectorAll('input[name="buffer"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 currentBuffer = parseInt(e.target.value);
@@ -433,20 +426,43 @@ map.on('load', async () => {
             });
         });
 
+        // Link Light Rail checkbox
         document.getElementById('show-link').addEventListener('change', () => {
-            updateStopLayerVisibility();
-            recalculateWalkshed();
             const showLink = document.getElementById('show-link').checked;
+            const showRR = document.getElementById('show-rr').checked;
+            
+            // Auto-enable stops when a line is selected
+            if (showLink || showRR) {
+                document.getElementById('show-stops').checked = true;
+            }
+            
+            // Update line visibility
             map.setLayoutProperty('link-line-layer', 'visibility', showLink ? 'visible' : 'none');
-        });
-
-        document.getElementById('show-rr').addEventListener('change', () => {
+            
+            // Update stops and recalculate
             updateStopLayerVisibility();
             recalculateWalkshed();
-            const showRR = document.getElementById('show-rr').checked;
-            map.setLayoutProperty('rr-line-layer', 'visibility', showRR ? 'visible' : 'none');
         });
 
+        // RapidRide checkbox
+        document.getElementById('show-rr').addEventListener('change', () => {
+            const showLink = document.getElementById('show-link').checked;
+            const showRR = document.getElementById('show-rr').checked;
+            
+            // Auto-enable stops when a line is selected
+            if (showLink || showRR) {
+                document.getElementById('show-stops').checked = true;
+            }
+            
+            // Update line visibility
+            map.setLayoutProperty('rr-line-layer', 'visibility', showRR ? 'visible' : 'none');
+            
+            // Update stops and recalculate
+            updateStopLayerVisibility();
+            recalculateWalkshed();
+        });
+
+        // Show stops checkbox
         document.getElementById('show-stops').addEventListener('change', updateStopLayerVisibility);
 
     } catch (error) {
@@ -455,12 +471,14 @@ map.on('load', async () => {
     }
 });
 
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    
-    const hamburger = document.getElementById("hamburger");
-    const menu = document.getElementById("hamburger-menu");
-    
+map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+// Hamburger menu toggle
+const hamburger = document.getElementById("hamburger");
+const menu = document.getElementById("hamburger-menu");
+
+if (hamburger && menu) {
     hamburger.addEventListener("click", () => {
         menu.style.display = (menu.style.display === "block") ? "none" : "block";
     });
-
+}
