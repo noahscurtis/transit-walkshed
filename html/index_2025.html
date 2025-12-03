@@ -6,7 +6,7 @@
     <title>Seattle Transit Walkshed Analysis</title>
 
 
-    <link href="../css/css.css" rel="stylesheet" />
+    <link href="../css/index.css" rel="stylesheet" />
 
     <!-- Mapbox + Turf -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
@@ -38,12 +38,14 @@
     </div>
 
     <h3>Transit Walksheds (Current)</h3>
-
+    <label><input type="checkbox" checked id="choropleth">Population Density</label>
     <h4>Walkshed Distance</h4>
-    <label><input type="radio" name="buffer" value="1320" checked> 0.25 mi (5 min walk)</label>
+    <label><input type="radio" name="buffer" value="1320"> 0.25 mi (5 min walk)</label>
     <label><input type="radio" name="buffer" value="2640"> 0.5 mi (10 min walk)</label>
     <label><input type="radio" name="buffer" value="3960"> 0.75 mi (15 min walk)</label>
 
+    <button id='calc'> Calculate Walkshed </button>
+    <button id='clear'> Clear </button>
     <h4>Population Density</h4>
     <div class="color-scale">
         <span style="background:#ffffcc"></span>
@@ -61,7 +63,7 @@
 
     <h4>Transit Lines</h4>
     <label><input type="checkbox" id="show-link">
-        <span class="legend-color" style="background:#00A651"></span>Link Light Rail
+        <span class="legend-color" style="background:#1565c0"></span>Link Light Rail
     </label>
     <label><input type="checkbox" id="show-rr">
         <span class="legend-color" style="background:#c62828"></span>RapidRide Bus
