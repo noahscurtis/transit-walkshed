@@ -10,7 +10,6 @@ const map = new mapboxgl.Map({
 const populationURL = "../assets/data/population/population20_50.geojson";
 const linkLineURL = "../assets/data/lines/link_line.geojson";
 const linkStopsURL = "../assets/data/stops/link_stops.geojson";
-const linkPlannedStopsURL = "../assets/data/stops/link_stops_planned.geojson";
 const rrLineURL = "../assets/data/lines/rr_existing.geojson";
 const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
 const rrPlannedURL = "../assets/data/lines/rr_planned.geojson";
@@ -25,7 +24,7 @@ const colorScale = [
     [80000, '#0c2c84']
 ];
 
-let populationData, linkLineData, linkStopsData, linkPlannedStopsData, rrLineData, rrStopsData, rrPlannedData;
+let populationData, linkLineData, linkStopsData, rrLineData, rrStopsData, rrPlannedData;
 let seattleTotalPop2050 = 0;
 let currentBuffer = 1320;
 let cache = {};
@@ -153,7 +152,6 @@ function getSelectedStopsAndLines() {
     
     const stopFeatures = [];
     if (showLink && linkStopsData) stopFeatures.push(...linkStopsData.features);
-    if (showLink && linkPlannedStopsData) stopFeatures.push(...linkPlannedStopsData.features);
     if (showRR && rrStopsData) stopFeatures.push(...rrStopsData.features);
     
     const lineFeatures = [];
@@ -200,10 +198,15 @@ function updateLineVisibility() {
     
     map.setLayoutProperty('link-line-layer', 'visibility', showLink ? 'visible' : 'none');
     map.setLayoutProperty('link-stops-layer', 'visibility', showLink && showStops ? 'visible' : 'none');
-    map.setLayoutProperty('link-planned-stops-layer', 'visibility', showLink && showStops ? 'visible' : 'none');
     map.setLayoutProperty('rr-line-layer', 'visibility', showRR ? 'visible' : 'none');
     map.setLayoutProperty('rr-stops-layer', 'visibility', showRR && showStops ? 'visible' : 'none');
     map.setLayoutProperty('rr-planned-layer', 'visibility', showRR ? 'visible' : 'none');
+}
+
+function clear() {
+    map.getSource('clipped-census').setData(fullCityData.geojson);
+    map.getSource('buffer-outline').setData(turf.featureCollection([]));
+    updateStats(fullCityData, true);
 }
 
 async function recalculateWalkshed() {
@@ -246,19 +249,14 @@ async function recalculateWalkshed() {
 }
 
 map.on('load', async () => {
-    // Reset checkboxes to unchecked on page load
-    document.getElementById('show-link').checked = false;
-    document.getElementById('show-rr').checked = false;
-    document.getElementById('show-stops').checked = false;
 
     try {
         document.getElementById('loading').textContent = 'Loading data files...';
         
-        [populationData, linkLineData, linkStopsData, linkPlannedStopsData, rrLineData, rrStopsData, rrPlannedData] = await Promise.all([
+        [populationData, linkLineData, linkStopsData, rrLineData, rrStopsData, rrPlannedData] = await Promise.all([
             loadJSON(populationURL),
             loadJSON(linkLineURL),
             loadJSON(linkStopsURL),
-            loadJSON(linkPlannedStopsURL),
             loadJSON(rrLineURL),
             loadJSON(rrStopsURL),
             loadJSON(rrPlannedURL)
@@ -296,6 +294,14 @@ map.on('load', async () => {
             bufferArea: totalArea
         };
 
+        // Cache empty selection state
+        cache[getCacheKey(false, false, 1320)] = { 
+            geojson: turf.featureCollection([]), 
+            totalPopulation: 0, 
+            bufferArea: 0,
+            bufferGeom: turf.featureCollection([])
+        };
+
         document.getElementById('loading').style.display = 'none';
 
         // Initialize with full city data (no transit selected)
@@ -311,7 +317,6 @@ map.on('load', async () => {
 
         map.addSource('link-line', { type: 'geojson', data: linkLineData });
         map.addSource('link-stops', { type: 'geojson', data: linkStopsData });
-        map.addSource('link-planned-stops', { type: 'geojson', data: linkPlannedStopsData });
         map.addSource('rr-line', { type: 'geojson', data: rrLineData });
         map.addSource('rr-stops', { type: 'geojson', data: rrStopsData });
         map.addSource('rr-planned', { type: 'geojson', data: rrPlannedData });
@@ -371,7 +376,7 @@ map.on('load', async () => {
             type: 'line',
             source: 'link-line',
             paint: {
-                'line-color': '#00A651',
+                'line-color': '#1565c0',
                 'line-width': 3,
                 'line-opacity': 0.9
             }
@@ -383,21 +388,8 @@ map.on('load', async () => {
             source: 'link-stops',
             paint: {
                 'circle-radius': 6,
-                'circle-color': '#00A651',
+                'circle-color': '#1565c0',
                 'circle-stroke-color': '#fff',
-                'circle-stroke-width': 2
-            }
-        });
-
-
-        map.addLayer({
-            id: 'link-planned-stops-layer',
-            type: 'circle',
-            source: 'link-planned-stops',
-            paint: {
-                'circle-radius': 6,
-                'circle-color': 'transparent',
-                'circle-stroke-color': '#00A651',
                 'circle-stroke-width': 2
             }
         });
@@ -414,13 +406,12 @@ map.on('load', async () => {
             }
         });
 
-        // Hide all transit layers by default
-        map.setLayoutProperty('link-line-layer', 'visibility', 'none');
-        map.setLayoutProperty('link-stops-layer', 'visibility', 'none');
-        map.setLayoutProperty('link-planned-stops-layer', 'visibility', 'none');
-        map.setLayoutProperty('rr-line-layer', 'visibility', 'none');
-        map.setLayoutProperty('rr-stops-layer', 'visibility', 'none');
-        map.setLayoutProperty('rr-planned-layer', 'visibility', 'none');
+        // Show all transit layers by default
+        map.setLayoutProperty('link-line-layer', 'visibility', 'visible');
+        map.setLayoutProperty('link-stops-layer', 'visibility', 'visible');
+        map.setLayoutProperty('rr-line-layer', 'visibility', 'visible');
+        map.setLayoutProperty('rr-stops-layer', 'visibility', 'visible');
+        map.setLayoutProperty('rr-planned-layer', 'visibility', 'visible');
 
         // Show full city stats
         updateStats(fullCityData, true);
@@ -435,39 +426,45 @@ map.on('load', async () => {
                     <div class="popup-info">
                         <strong>Population:</strong> ${props.clipped_population?.toLocaleString() || 'N/A'}<br>
                         <strong>Density:</strong> ${props.density?.toLocaleString() || 'N/A'} /mi²<br>
-                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²
+                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²<br>
+                        <strong>Growth Rate:</strong> ${props.avg_growth_pct ? (props.avg_growth_pct * 100).toFixed(2) + '%' : 'N/A'} /yr
                     </div>
                 `)
                 .addTo(map);
         });
 
-        ['link-stops-layer', 'rr-stops-layer', 'link-planned-stops-layer'].forEach(layerId => {
+        ['link-stops-layer', 'rr-stops-layer'].forEach(layerId => {
             map.on('click', layerId, (e) => {
                 const props = e.features[0].properties;
                 const type = layerId.includes('link') ? 'Link Light Rail' : 'RapidRide';
-                const status = props.status ? `<br><strong>Status:</strong> ${props.status}` : '';
-                const targetYear = props.target_year ? `<br><strong>Target Year:</strong> ${props.target_year}` : '';
                 popup.setLngLat(e.lngLat)
                     .setHTML(`
                         <div class="popup-title">${props.stop_name || 'Transit Stop'}</div>
                         <div class="popup-info">
                             <strong>Type:</strong> ${type}<br>
-                            <strong>Stop ID:</strong> ${props.stop_id || 'N/A'}${status}${targetYear}
+                            <strong>Stop ID:</strong> ${props.stop_id || 'N/A'}
                         </div>
                     `)
                     .addTo(map);
             });
         });
 
-        ['census-choropleth', 'link-stops-layer', 'rr-stops-layer', 'link-planned-stops-layer'].forEach(layer => {
+        ['census-choropleth', 'link-stops-layer', 'rr-stops-layer'].forEach(layer => {
             map.on('mouseenter', layer, () => map.getCanvas().style.cursor = 'pointer');
             map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
         });
 
+        document.getElementById('choropleth').addEventListener('change', () => {
+            map.setLayoutProperty('census-choropleth', 'visibility',
+                document.getElementById('choropleth').checked ? 'visible' : 'none');
+        });
+
+        document.getElementById('calc').addEventListener('click', recalculateWalkshed);
+        document.getElementById('clear').addEventListener('click', clear);
+
         document.querySelectorAll('input[name="buffer"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 currentBuffer = parseInt(e.target.value);
-                recalculateWalkshed();
             });
         });
 
@@ -481,7 +478,6 @@ map.on('load', async () => {
             }
             
             updateLineVisibility();
-            recalculateWalkshed();
         });
 
         document.getElementById('show-rr').addEventListener('change', () => {
@@ -494,25 +490,25 @@ map.on('load', async () => {
             }
             
             updateLineVisibility();
-            recalculateWalkshed();
         });
 
         document.getElementById('show-stops').addEventListener('change', updateLineVisibility);
 
+        document.getElementById('show-link').checked = true;
+        document.getElementById('show-rr').checked = true;
+        document.getElementById('show-stops').checked = true;
     } catch (error) {
         console.error('Error:', error);
         document.getElementById('loading').textContent = 'Error: ' + error.message;
     }
 });
 
-map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-// Hamburger menu toggle
-const hamburger = document.getElementById("hamburger");
-const menu = document.getElementById("hamburger-menu");
-
-if (hamburger && menu) {
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    
+    const hamburger = document.getElementById("hamburger");
+    const menu = document.getElementById("hamburger-menu");
+    
     hamburger.addEventListener("click", () => {
         menu.style.display = (menu.style.display === "block") ? "none" : "block";
     });
-}
+
