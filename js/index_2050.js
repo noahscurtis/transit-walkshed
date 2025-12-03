@@ -467,4 +467,12 @@ map.on('load', async () => {
     }
 });
 
+
 map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    const hamburger = document.getElementById("hamburger");
+    const menu = document.getElementById("hamburger-menu");
+    
+    hamburger.addEventListener("click", () => {
+        menu.style.display = (menu.style.display === "block") ? "none" : "block";
+    });

@@ -150,3 +150,55 @@ input {
     border-radius: 3px;
     margin-left: 5px;
 }
+
+#hamburger-container {
+    margin-bottom: 15px;
+}
+
+#hamburger {
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    box-sizing: border-box;
+}
+
+#hamburger:hover {
+    background: #f0f0f0;
+}
+
+#hamburger-menu {
+    display: none; 
+    background: white;
+    margin-top: 8px;
+    border-radius: 6px;
+    padding: 5px 0;
+    width: 100%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-sizing: border-box;
+}
+
+
+.menu-item {
+    padding: 10px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.menu-item:hover {
+    background: #f5f5f5;
+}
+
+.menu-divider {
+    height: 1px;
+    background: #ddd;
+    width: 90%;
+    margin: 0 auto;
+}
