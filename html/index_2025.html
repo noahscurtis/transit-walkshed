@@ -4,91 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Seattle Transit Walkshed Analysis</title>
+
+    <!-- Correct absolute GitHub Pages paths -->
+    <link href="/transit-walkshed/css/index_2025.css" rel="stylesheet" />
+
+    <!-- Mapbox + Turf -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
-    <style>
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        #map { width: 100vw; height: 100vh; }
-        #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            max-width: 240px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        #controls h3 { margin: 0 0 10px 0; font-size: 16px; }
-        #controls h4 { margin: 15px 0 8px 0; font-size: 13px; color: #666; }
-        label { display: block; margin: 5px 0; font-size: 13px; cursor: pointer; }
-        input { margin-right: 8px; cursor: pointer; }
-        .legend-color {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-            margin-right: 6px;
-            vertical-align: middle;
-        }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-        }
-        #processing {
-            display: none;
-            position: absolute;
-            top: 10px;
-            right: 50px;
-            background: rgba(255,255,255,0.95);
-            padding: 8px 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            font-size: 12px;
-            z-index: 1000;
-        }
-        .mapboxgl-popup-content { padding: 15px; max-width: 250px; }
-        .popup-title { font-weight: bold; margin-bottom: 8px; font-size: 14px; }
-        .popup-info { font-size: 12px; color: #666; line-height: 1.5; }
-        #stats {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-            font-size: 12px;
-        }
-        #stats .stat-value { font-weight: bold; color: #1565c0; }
-        .color-scale {
-            display: flex;
-            height: 12px;
-            margin: 8px 0 4px 0;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        .color-scale span { flex: 1; }
-        .scale-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            color: #666;
-        }
-        #no-selection {
-            display: none;
-            color: #999;
-            font-style: italic;
-            font-size: 12px;
-            margin-top: 10px;
-        }
-    </style>
+
 </head>
 <body>
 
@@ -97,13 +21,29 @@
 <div id="processing">⏳ Recalculating...</div>
 
 <div id="controls">
+
+    <div id="hamburger-container">
+        <div id="hamburger">☰</div>
+
+        <div id="hamburger-menu">
+            <div class="menu-item" onclick="location.href='home.html'">Home</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="location.href='index_2025.html'">Walkshed Analysis</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="location.href='population.html'">Population Analysis</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="location.href='citations.html'">Citations</div>
+            <div class="menu-divider"></div>
+        </div>
+    </div>
+
     <h3>🚇 Transit Walksheds</h3>
-    
+
     <h4>Walkshed Distance</h4>
     <label><input type="radio" name="buffer" value="1320" checked> 0.25 mi (5 min walk)</label>
     <label><input type="radio" name="buffer" value="2640"> 0.5 mi (10 min walk)</label>
     <label><input type="radio" name="buffer" value="3960"> 0.75 mi (15 min walk)</label>
-    
+
     <h4>Population Density</h4>
     <div class="color-scale">
         <span style="background:#ffffcc"></span>
@@ -118,7 +58,7 @@
         <span>Low</span>
         <span>High</span>
     </div>
-    
+
     <h4>Transit Lines</h4>
     <label><input type="checkbox" id="show-link" checked>
         <span class="legend-color" style="background:#1565c0"></span>Link Light Rail
@@ -126,434 +66,20 @@
     <label><input type="checkbox" id="show-rr" checked>
         <span class="legend-color" style="background:#c62828"></span>RapidRide Bus
     </label>
-    
+
     <label><input type="checkbox" id="show-stops" checked> Show Stop Points</label>
-    
+
     <div id="stats">
         <h4 style="margin-top:0">Walkshed Statistics</h4>
         <div id="no-selection">Select at least one transit line</div>
         <div id="stats-content">
             <div>Total Population: <span class="stat-value" id="total-pop">--</span></div>
-            <div>% of Seattle: <span class="stat-value" id="pct-seattle">--</span></div>
             <div>Area: <span class="stat-value" id="total-area">--</span> mi²</div>
         </div>
     </div>
 </div>
 
-<script>
-mapboxgl.accessToken = 'pk.eyJ1IjoidHRob21wNCIsImEiOiJjbWg4ZnZ4cTUxMGQ5MmtwdWR4MTNnbm40In0.JHg_sbayM5UCtQkYhC2LEA';
-
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/light-v10',
-    center: [-122.33, 47.62],
-    zoom: 11
-});
-
-const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
-const linkStopsURL = "../assets/data/stops/link_stops.geojson";
-const populationURL = "../assets/data/population/population20_50.geojson";
-const linkLineURL = "../assets/data/lines/link_line.geojson";
-const rrLineURL = "../assets/data/lines/rr_existing.geojson";
-
-const colorScale = [
-    [0, '#ffffcc'],
-    [2500, '#c7e9b4'],
-    [5000, '#7fcdbb'],
-    [10000, '#41b6c4'],
-    [20000, '#1d91c0'],
-    [40000, '#225ea8'],
-    [80000, '#0c2c84']
-];
-
-let populationData, rrStopsData, linkStopsData, linkLineData, rrLineData;
-let seattleTotalPop = 0;
-let currentBuffer = 1320;
-let cache = {};
-
-async function loadJSON(url) {
-    const res = await fetch(url);
-    return res.json();
-}
-
-function getCacheKey(showLink, showRR, radius) {
-    return `${showLink ? 'L' : ''}-${showRR ? 'R' : ''}-${radius}`;
-}
-
-function calculateClippedPopulation(censusFeature, clippedFeature) {
-    try {
-        const originalArea = turf.area(censusFeature);
-        const clippedArea = turf.area(clippedFeature);
-        if (originalArea === 0) return 0;
-        const areaRatio = clippedArea / originalArea;
-        const pop = censusFeature.properties.TOTAL_POPULATION || 0;
-        return Math.round(pop * areaRatio);
-    } catch (e) {
-        return 0;
-    }
-}
-
-function createUnifiedBuffer(stops, radius) {
-    if (!stops.features || stops.features.length === 0) {
-        console.warn('No stops provided for buffer creation');
-        return null;
-    }
-    
-    console.log(`Creating buffer for ${stops.features.length} stops at ${radius} feet`);
-    
-    const buffers = [];
-    stops.features.forEach((stop, i) => {
-        try {
-            const buffer = turf.buffer(stop, radius, { units: 'feet' });
-            if (buffer && buffer.geometry) buffers.push(buffer);
-        } catch (e) {
-            console.warn(`Buffer failed for stop ${i}:`, e);
-        }
-    });
-    
-    console.log(`Created ${buffers.length} individual buffers`);
-    
-    if (buffers.length === 0) return null;
-    
-    let unified = buffers[0];
-    for (let i = 1; i < buffers.length; i++) {
-        try {
-            const result = turf.union(unified, buffers[i]);
-            if (result) unified = result;
-        } catch (e) {
-            console.warn(`Union failed at ${i}:`, e);
-        }
-    }
-    
-    console.log('Unified buffer created successfully');
-    return unified;
-}
-
-function clipCensusToBuffer(census, buffer) {
-    const clippedFeatures = [];
-    let totalPop = 0;
-    
-    if (!buffer || !buffer.geometry) {
-        return { geojson: turf.featureCollection([]), totalPopulation: 0, bufferArea: 0 };
-    }
-    
-    const bufferBbox = turf.bbox(buffer);
-    
-    census.features.forEach((tract) => {
-        try {
-            if (!tract.geometry || !tract.geometry.coordinates) return;
-            
-            const tractBbox = turf.bbox(tract);
-            if (tractBbox[2] < bufferBbox[0] || tractBbox[0] > bufferBbox[2] ||
-                tractBbox[3] < bufferBbox[1] || tractBbox[1] > bufferBbox[3]) return;
-            
-            if (turf.booleanDisjoint(tract, buffer)) return;
-            
-            const clipped = turf.intersect(tract, buffer);
-            if (clipped && clipped.geometry) {
-                const clippedPop = calculateClippedPopulation(tract, clipped);
-                const clippedAreaSqMi = turf.area(clipped) / 2589988.11;
-                const density = clippedAreaSqMi > 0 ? clippedPop / clippedAreaSqMi : 0;
-                
-                clipped.properties = {
-                    ...tract.properties,
-                    clipped_population: clippedPop,
-                    clipped_area_sqmi: parseFloat(clippedAreaSqMi.toFixed(4)),
-                    density: Math.round(density)
-                };
-                
-                totalPop += clippedPop;
-                clippedFeatures.push(clipped);
-            }
-        } catch (e) {}
-    });
-    
-    const bufferAreaSqMi = turf.area(buffer) / 2589988.11;
-    
-    return {
-        geojson: turf.featureCollection(clippedFeatures),
-        totalPopulation: totalPop,
-        bufferArea: bufferAreaSqMi,
-        bufferGeom: buffer
-    };
-}
-
-function getSelectedStops() {
-    const showLink = document.getElementById('show-link').checked;
-    const showRR = document.getElementById('show-rr').checked;
-    
-    const features = [];
-    if (showLink && linkStopsData) features.push(...linkStopsData.features);
-    if (showRR && rrStopsData) features.push(...rrStopsData.features);
-    
-    return { stops: turf.featureCollection(features), showLink, showRR };
-}
-
-function updateStats(data) {
-    const statsContent = document.getElementById('stats-content');
-    const noSelection = document.getElementById('no-selection');
-    
-    if (!data || data.totalPopulation === 0) {
-        statsContent.style.display = 'none';
-        noSelection.style.display = 'block';
-        return;
-    }
-    
-    statsContent.style.display = 'block';
-    noSelection.style.display = 'none';
-    
-    document.getElementById('total-pop').textContent = data.totalPopulation.toLocaleString();
-    document.getElementById('total-area').textContent = data.bufferArea.toFixed(2);
-    
-    const pctSeattle = seattleTotalPop > 0 
-        ? ((data.totalPopulation / seattleTotalPop) * 100).toFixed(1)
-        : '0';
-    document.getElementById('pct-seattle').textContent = pctSeattle + '%';
-}
-
-function updateStopLayerVisibility() {
-    const showStops = document.getElementById('show-stops').checked;
-    const showLink = document.getElementById('show-link').checked;
-    const showRR = document.getElementById('show-rr').checked;
-    
-    map.setLayoutProperty('link-stops-layer', 'visibility', 
-        showStops && showLink ? 'visible' : 'none');
-    map.setLayoutProperty('rr-stops-layer', 'visibility', 
-        showStops && showRR ? 'visible' : 'none');
-}
-
-async function recalculateWalkshed() {
-    const { stops, showLink, showRR } = getSelectedStops();
-    const radius = currentBuffer;
-    const cacheKey = getCacheKey(showLink, showRR, radius);
-    
-    if (cache[cacheKey]) {
-        const data = cache[cacheKey];
-        map.getSource('clipped-census').setData(data.geojson);
-        map.getSource('buffer-outline').setData(data.bufferGeom || turf.featureCollection([]));
-        updateStats(data);
-        return;
-    }
-    
-    if (stops.features.length === 0) {
-        const emptyData = { 
-            geojson: turf.featureCollection([]), 
-            totalPopulation: 0, 
-            bufferArea: 0,
-            bufferGeom: turf.featureCollection([])
-        };
-        map.getSource('clipped-census').setData(emptyData.geojson);
-        map.getSource('buffer-outline').setData(emptyData.bufferGeom);
-        updateStats(null);
-        cache[cacheKey] = emptyData;
-        return;
-    }
-    
-    document.getElementById('processing').style.display = 'block';
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
-    try {
-        const buffer = createUnifiedBuffer(stops, radius);
-        const data = clipCensusToBuffer(populationData, buffer);
-        
-        cache[cacheKey] = data;
-        
-        map.getSource('clipped-census').setData(data.geojson);
-        map.getSource('buffer-outline').setData(data.bufferGeom || turf.featureCollection([]));
-        updateStats(data);
-    } catch (e) {
-        console.error('Error calculating walkshed:', e);
-    }
-    
-    document.getElementById('processing').style.display = 'none';
-}
-
-map.on('load', async () => {
-    try {
-        document.getElementById('loading').textContent = 'Loading data files...';
-        
-        [rrStopsData, linkStopsData, populationData, linkLineData, rrLineData] = await Promise.all([
-            loadJSON(rrStopsURL),
-            loadJSON(linkStopsURL),
-            loadJSON(populationURL),
-            loadJSON(linkLineURL),
-            loadJSON(rrLineURL)
-        ]);
-
-        document.getElementById('loading').textContent = 'Processing walksheds...';
-
-        // Calculate Seattle's total population
-        seattleTotalPop = populationData.features.reduce((sum, tract) => {
-            return sum + (tract.properties.TOTAL_POPULATION || 0);
-        }, 0);
-        console.log(`Seattle total population: ${seattleTotalPop.toLocaleString()}`);
-
-        const { stops } = getSelectedStops();
-        const initialBuffer = createUnifiedBuffer(stops, 1320);
-        const initialData = clipCensusToBuffer(populationData, initialBuffer);
-        cache[getCacheKey(true, true, 1320)] = initialData;
-
-        document.getElementById('loading').style.display = 'none';
-
-        map.addSource('clipped-census', {
-            type: 'geojson',
-            data: initialData.geojson
-        });
-
-        map.addSource('buffer-outline', {
-            type: 'geojson',
-            data: initialData.bufferGeom || turf.featureCollection([])
-        });
-
-        map.addSource('link-stops', { type: 'geojson', data: linkStopsData });
-        map.addSource('rr-stops', { type: 'geojson', data: rrStopsData });
-        map.addSource('link-line', { type: 'geojson', data: linkLineData });
-        map.addSource('rr-line', { type: 'geojson', data: rrLineData });
-
-        map.addLayer({
-            id: 'census-choropleth',
-            type: 'fill',
-            source: 'clipped-census',
-            paint: {
-                'fill-color': [
-                    'interpolate', ['linear'], ['get', 'density'],
-                    ...colorScale.flat()
-                ],
-                'fill-opacity': 0.75
-            }
-        });
-
-        map.addLayer({
-            id: 'census-outline',
-            type: 'line',
-            source: 'clipped-census',
-            paint: { 'line-color': '#fff', 'line-width': 0.5, 'line-opacity': 0.5 }
-        });
-
-        map.addLayer({
-            id: 'buffer-outline-layer',
-            type: 'line',
-            source: 'buffer-outline',
-            paint: { 'line-color': '#333', 'line-width': 2, 'line-dasharray': [2, 2] }
-        });
-
-        map.addLayer({
-            id: 'rr-line-layer',
-            type: 'line',
-            source: 'rr-line',
-            paint: {
-                'line-color': '#c62828',
-                'line-width': 2.5,
-                'line-opacity': 0.9
-            }
-        });
-
-        map.addLayer({
-            id: 'link-line-layer',
-            type: 'line',
-            source: 'link-line',
-            paint: {
-                'line-color': '#1565c0',
-                'line-width': 3,
-                'line-opacity': 0.9
-            }
-        });
-
-        map.addLayer({
-            id: 'link-stops-layer',
-            type: 'circle',
-            source: 'link-stops',
-            paint: {
-                'circle-radius': 6,
-                'circle-color': '#1565c0',
-                'circle-stroke-color': '#fff',
-                'circle-stroke-width': 2
-            }
-        });
-
-        map.addLayer({
-            id: 'rr-stops-layer',
-            type: 'circle',
-            source: 'rr-stops',
-            paint: {
-                'circle-radius': 5,
-                'circle-color': '#c62828',
-                'circle-stroke-color': '#fff',
-                'circle-stroke-width': 2
-            }
-        });
-
-        updateStats(initialData);
-
-        const popup = new mapboxgl.Popup({ closeButton: true, closeOnClick: true });
-
-        map.on('click', 'census-choropleth', (e) => {
-            const props = e.features[0].properties;
-            popup.setLngLat(e.lngLat)
-                .setHTML(`
-                    <div class="popup-title">Census Tract</div>
-                    <div class="popup-info">
-                        <strong>Population:</strong> ${props.clipped_population?.toLocaleString() || 'N/A'}<br>
-                        <strong>Density:</strong> ${props.density?.toLocaleString() || 'N/A'} /mi²<br>
-                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²<br>
-                        <strong>Growth Rate:</strong> ${props.avg_growth_pct ? (props.avg_growth_pct * 100).toFixed(2) + '%' : 'N/A'} /yr
-                    </div>
-                `)
-                .addTo(map);
-        });
-
-        ['link-stops-layer', 'rr-stops-layer'].forEach(layerId => {
-            map.on('click', layerId, (e) => {
-                const props = e.features[0].properties;
-                const type = layerId.includes('link') ? 'Link Light Rail' : 'RapidRide';
-                popup.setLngLat(e.lngLat)
-                    .setHTML(`
-                        <div class="popup-title">${props.stop_name || 'Transit Stop'}</div>
-                        <div class="popup-info">
-                            <strong>Type:</strong> ${type}<br>
-                            <strong>Stop ID:</strong> ${props.stop_id || 'N/A'}
-                        </div>
-                    `)
-                    .addTo(map);
-            });
-        });
-
-        ['census-choropleth', 'link-stops-layer', 'rr-stops-layer'].forEach(layer => {
-            map.on('mouseenter', layer, () => map.getCanvas().style.cursor = 'pointer');
-            map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
-        });
-
-        document.querySelectorAll('input[name="buffer"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                currentBuffer = parseInt(e.target.value);
-                recalculateWalkshed();
-            });
-        });
-
-        document.getElementById('show-link').addEventListener('change', () => {
-            updateStopLayerVisibility();
-            recalculateWalkshed();
-            const showLink = document.getElementById('show-link').checked;
-            map.setLayoutProperty('link-line-layer', 'visibility', showLink ? 'visible' : 'none');
-        });
-
-        document.getElementById('show-rr').addEventListener('change', () => {
-            updateStopLayerVisibility();
-            recalculateWalkshed();
-            const showRR = document.getElementById('show-rr').checked;
-            map.setLayoutProperty('rr-line-layer', 'visibility', showRR ? 'visible' : 'none');
-        });
-
-        document.getElementById('show-stops').addEventListener('change', updateStopLayerVisibility);
-
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('loading').textContent = 'Error: ' + error.message;
-    }
-});
-
-map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-</script>
+<script src="../js/index_2025.js"></script>
 
 </body>
 </html>
