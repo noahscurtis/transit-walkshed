@@ -134,6 +134,7 @@
         <div id="no-selection">Select at least one transit line</div>
         <div id="stats-content">
             <div>Total Population: <span class="stat-value" id="total-pop">--</span></div>
+            <div>% of Seattle: <span class="stat-value" id="pct-seattle">--</span></div>
             <div>Area: <span class="stat-value" id="total-area">--</span> mi²</div>
         </div>
     </div>
@@ -151,7 +152,7 @@ const map = new mapboxgl.Map({
 
 const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
 const linkStopsURL = "../assets/data/stops/link_stops.geojson";
-const populationURL = "../assets/data/population/2020population_4326.geojson";
+const populationURL = "../assets/data/population/population20_50.geojson";
 const linkLineURL = "../assets/data/lines/link_line.geojson";
 const rrLineURL = "../assets/data/lines/rr_existing.geojson";
 
@@ -166,6 +167,7 @@ const colorScale = [
 ];
 
 let populationData, rrStopsData, linkStopsData, linkLineData, rrLineData;
+let seattleTotalPop = 0;
 let currentBuffer = 1320;
 let cache = {};
 
@@ -302,9 +304,12 @@ function updateStats(data) {
     
     document.getElementById('total-pop').textContent = data.totalPopulation.toLocaleString();
     document.getElementById('total-area').textContent = data.bufferArea.toFixed(2);
+    
+    const pctSeattle = seattleTotalPop > 0 
+        ? ((data.totalPopulation / seattleTotalPop) * 100).toFixed(1)
+        : '0';
+    document.getElementById('pct-seattle').textContent = pctSeattle + '%';
 }
-
-
 
 function updateStopLayerVisibility() {
     const showStops = document.getElementById('show-stops').checked;
@@ -376,6 +381,12 @@ map.on('load', async () => {
         ]);
 
         document.getElementById('loading').textContent = 'Processing walksheds...';
+
+        // Calculate Seattle's total population
+        seattleTotalPop = populationData.features.reduce((sum, tract) => {
+            return sum + (tract.properties.TOTAL_POPULATION || 0);
+        }, 0);
+        console.log(`Seattle total population: ${seattleTotalPop.toLocaleString()}`);
 
         const { stops } = getSelectedStops();
         const initialBuffer = createUnifiedBuffer(stops, 1320);
@@ -484,7 +495,8 @@ map.on('load', async () => {
                     <div class="popup-info">
                         <strong>Population:</strong> ${props.clipped_population?.toLocaleString() || 'N/A'}<br>
                         <strong>Density:</strong> ${props.density?.toLocaleString() || 'N/A'} /mi²<br>
-                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²
+                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²<br>
+                        <strong>Growth Rate:</strong> ${props.avg_growth_pct ? (props.avg_growth_pct * 100).toFixed(2) + '%' : 'N/A'} /yr
                     </div>
                 `)
                 .addTo(map);
