@@ -55,7 +55,6 @@ function calculateClippedPopulation(censusFeature, clippedFeature) {
 function createUnifiedBuffer(stops, lines, radius) {
     const buffers = [];
     
-    // Buffer from point stops (fast)
     if (stops.features && stops.features.length > 0) {
         console.log(`Creating buffers for ${stops.features.length} stops at ${radius} feet`);
         stops.features.forEach((stop, i) => {
@@ -68,7 +67,6 @@ function createUnifiedBuffer(stops, lines, radius) {
         });
     }
     
-    // Buffer from line geometries (slower, only for planned routes)
     if (lines.features && lines.features.length > 0) {
         console.log(`Creating buffers for ${lines.features.length} planned lines at ${radius} feet`);
         lines.features.forEach((line, i) => {
@@ -152,12 +150,10 @@ function getSelectedStopsAndLines() {
     const showLink = document.getElementById('show-link').checked;
     const showRR = document.getElementById('show-rr').checked;
     
-    // Stops for existing transit (fast buffering)
     const stopFeatures = [];
     if (showLink && linkStopsData) stopFeatures.push(...linkStopsData.features);
     if (showRR && rrStopsData) stopFeatures.push(...rrStopsData.features);
     
-    // Lines only for planned routes (slower buffering)
     const lineFeatures = [];
     if (showRR && rrPlannedData) lineFeatures.push(...rrPlannedData.features);
     
@@ -221,7 +217,6 @@ async function recalculateWalkshed() {
     }
     
     if (stops.features.length === 0 && lines.features.length === 0) {
-        // Show full city choropleth when no transit selected
         map.getSource('clipped-census').setData(fullCityData.geojson);
         map.getSource('buffer-outline').setData(turf.featureCollection([]));
         updateStats(fullCityData, true);
@@ -248,6 +243,11 @@ async function recalculateWalkshed() {
 }
 
 map.on('load', async () => {
+    // Reset checkboxes to unchecked on page load
+    document.getElementById('show-link').checked = false;
+    document.getElementById('show-rr').checked = false;
+    document.getElementById('show-stops').checked = false;
+
     try {
         document.getElementById('loading').textContent = 'Loading data files...';
         
@@ -262,13 +262,11 @@ map.on('load', async () => {
 
         document.getElementById('loading').textContent = 'Processing walksheds...';
 
-        // Calculate Seattle's total 2050 population
         seattleTotalPop2050 = populationData.features.reduce((sum, tract) => {
             return sum + (tract.properties.pop50 || 0);
         }, 0);
         console.log(`Seattle total 2050 population: ${seattleTotalPop2050.toLocaleString()}`);
 
-        // Pre-calculate full city data for when no transit is selected
         const fullCityFeatures = populationData.features.map(tract => {
             const areaSqMi = turf.area(tract) / 2589988.11;
             const pop = tract.properties.pop50 || 0;
@@ -294,21 +292,25 @@ map.on('load', async () => {
             bufferArea: totalArea
         };
 
-        const { stops, lines } = getSelectedStopsAndLines();
-        const initialBuffer = createUnifiedBuffer(stops, lines, 1320);
-        const initialData = clipCensusToBuffer(populationData, initialBuffer);
-        cache[getCacheKey(true, true, 1320)] = initialData;
+        // Cache empty selection state
+        cache[getCacheKey(false, false, 1320)] = { 
+            geojson: turf.featureCollection([]), 
+            totalPopulation: 0, 
+            bufferArea: 0,
+            bufferGeom: turf.featureCollection([])
+        };
 
         document.getElementById('loading').style.display = 'none';
 
+        // Initialize with full city data (no transit selected)
         map.addSource('clipped-census', {
             type: 'geojson',
-            data: initialData.geojson
+            data: fullCityData.geojson
         });
 
         map.addSource('buffer-outline', {
             type: 'geojson',
-            data: initialData.bufferGeom || turf.featureCollection([])
+            data: turf.featureCollection([])
         });
 
         map.addSource('link-line', { type: 'geojson', data: linkLineData });
@@ -402,7 +404,15 @@ map.on('load', async () => {
             }
         });
 
-        updateStats(initialData);
+        // Hide all transit layers by default
+        map.setLayoutProperty('link-line-layer', 'visibility', 'none');
+        map.setLayoutProperty('link-stops-layer', 'visibility', 'none');
+        map.setLayoutProperty('rr-line-layer', 'visibility', 'none');
+        map.setLayoutProperty('rr-stops-layer', 'visibility', 'none');
+        map.setLayoutProperty('rr-planned-layer', 'visibility', 'none');
+
+        // Show full city stats
+        updateStats(fullCityData, true);
 
         const popup = new mapboxgl.Popup({ closeButton: true, closeOnClick: true });
 
@@ -450,11 +460,27 @@ map.on('load', async () => {
         });
 
         document.getElementById('show-link').addEventListener('change', () => {
+            const showLink = document.getElementById('show-link').checked;
+            const showRR = document.getElementById('show-rr').checked;
+            
+            // Auto-enable stops when a line is selected
+            if (showLink || showRR) {
+                document.getElementById('show-stops').checked = true;
+            }
+            
             updateLineVisibility();
             recalculateWalkshed();
         });
 
         document.getElementById('show-rr').addEventListener('change', () => {
+            const showLink = document.getElementById('show-link').checked;
+            const showRR = document.getElementById('show-rr').checked;
+            
+            // Auto-enable stops when a line is selected
+            if (showLink || showRR) {
+                document.getElementById('show-stops').checked = true;
+            }
+            
             updateLineVisibility();
             recalculateWalkshed();
         });
@@ -467,12 +493,12 @@ map.on('load', async () => {
     }
 });
 
-
-map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    
     const hamburger = document.getElementById("hamburger");
     const menu = document.getElementById("hamburger-menu");
     
     hamburger.addEventListener("click", () => {
         menu.style.display = (menu.style.display === "block") ? "none" : "block";
     });
+

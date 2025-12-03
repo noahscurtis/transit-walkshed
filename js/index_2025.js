@@ -235,6 +235,9 @@ async function recalculateWalkshed() {
 }
 
 map.on('load', async () => {
+    document.getElementById('show-link').checked = false;
+    document.getElementById('show-rr').checked = false;
+    document.getElementById('show-stops').checked = false;
     try {
         document.getElementById('loading').textContent = 'Loading data files...';
         
@@ -280,21 +283,25 @@ map.on('load', async () => {
             bufferArea: totalArea
         };
 
-        const { stops } = getSelectedStops();
-        const initialBuffer = createUnifiedBuffer(stops, 1320);
-        const initialData = clipCensusToBuffer(populationData, initialBuffer);
-        cache[getCacheKey(true, true, 1320)] = initialData;
+
+            const initialData = fullCityData;
+            cache[getCacheKey(false, false, 1320)] = { 
+                geojson: turf.featureCollection([]), 
+                totalPopulation: 0, 
+                bufferArea: 0,
+                bufferGeom: turf.featureCollection([])
+            };
 
         document.getElementById('loading').style.display = 'none';
 
         map.addSource('clipped-census', {
             type: 'geojson',
-            data: initialData.geojson
+            data: fullCityData.geojson
         });
 
         map.addSource('buffer-outline', {
             type: 'geojson',
-            data: initialData.bufferGeom || turf.featureCollection([])
+            data: turf.featureCollection([])
         });
 
         map.addSource('link-stops', { type: 'geojson', data: linkStopsData });
@@ -375,7 +382,11 @@ map.on('load', async () => {
             }
         });
 
-        updateStats(initialData);
+        map.setLayoutProperty('link-line-layer', 'visibility', 'none');
+        map.setLayoutProperty('rr-line-layer', 'visibility', 'none');
+        map.setLayoutProperty('link-stops-layer', 'visibility', 'none');
+        map.setLayoutProperty('rr-stops-layer', 'visibility', 'none');
+        updateStats(fullCityData, true);
 
         const popup = new mapboxgl.Popup({ closeButton: true, closeOnClick: true });
 
