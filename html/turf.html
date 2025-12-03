@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>RapidRide Buffer Population Analysis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        
+        .panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            width: 300px;
+            z-index: 1;
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+        }
+        
+        h2 { font-size: 16px; margin-bottom: 4px; color: #1a1a2e; }
+        .subtitle { font-size: 12px; color: #666; margin-bottom: 12px; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        
+        .stat-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value { font-size: 20px; font-weight: 700; color: #e63946; }
+        .stat-label { font-size: 10px; color: #666; margin-top: 2px; }
+        
+        .stop-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+        
+        .stop-item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .stop-item:hover { background: #f8f9fa; }
+        .stop-item:last-child { border-bottom: none; }
+        .stop-name { font-weight: 500; }
+        .stop-pop { color: #e63946; font-weight: 600; }
+        
+        .legend {
+            position: absolute;
+            bottom: 30px;
+            right: 10px;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            font-size: 11px;
+        }
+        
+        .legend-title { font-weight: 600; margin-bottom: 8px; }
+        .legend-scale { display: flex; height: 12px; width: 150px; margin-bottom: 4px; border-radius: 2px; overflow: hidden; }
+        .legend-labels { display: flex; justify-content: space-between; font-size: 10px; color: #666; }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        
+        .error { color: #e63946; font-size: 12px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="loading" id="loading">Loading data...</div>
+    
+    <div class="panel">
+        <h2>🚌 RapidRide Buffer Analysis</h2>
+        <div class="subtitle">Population within 0.75 km of stops</div>
+        
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-value" id="totalPop">-</div>
+                <div class="stat-label">Total Population</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stopCount">-</div>
+                <div class="stat-label">Stops Analyzed</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="blockCount">-</div>
+                <div class="stat-label">Census Blocks</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="avgPop">-</div>
+                <div class="stat-label">Avg Pop/Stop</div>
+            </div>
+        </div>
+        
+        <strong style="font-size:12px;">Population by Stop</strong>
+        <div class="stop-list" id="stopList">
+            <div class="stop-item"><span class="stop-name">Loading...</span></div>
+        </div>
+        
+        <div id="errorMsg" class="error" style="display:none;"></div>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-title">Population Density</div>
+        <div class="legend-scale">
+            <div style="flex:1;background:#fee5d9;"></div>
+            <div style="flex:1;background:#fcae91;"></div>
+            <div style="flex:1;background:#fb6a4a;"></div>
+            <div style="flex:1;background:#de2d26;"></div>
+            <div style="flex:1;background:#a50f15;"></div>
+        </div>
+        <div class="legend-labels">
+            <span>Low</span>
+            <span>High</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION - EDIT THESE PATHS
+        // ============================================
+        
+        const CONFIG = {
+            // Path to your RapidRide stops GeoJSON (MultiPoint features)
+            stopsFile: '../assets/data/stops/RR_stops_citylimits.geojson',
+            
+            // Path to your census blocks GeoJSON (Polygon features)
+            censusFile: '../assets/data/census_cleaned.geojson',
+            
+            // Property name containing population in your census GeoJSON
+            populationField: 'POP2025',
+            
+            // Buffer radius in kilometers
+            bufferRadius: 0.75,
+            
+            // Map center [lng, lat] - will auto-fit to data if null
+            mapCenter: null,
+            
+            // Mapbox token
+            mapboxToken: 'pk.eyJ1IjoidHRob21wNCIsImEiOiJjbWg4ZnZ4cTUxMGQ5MmtwdWR4MTNnbm40In0.JHg_sbayM5UCtQkYhC2LEA'
+        };
+        
+        // Extract RapidRide line letter from ROUTE_LIST (e.g., "50 773 C" -> "C Line")
+        function extractLineName(routeList) {
+            if (!routeList) return 'Unknown Stop';
+            const letters = routeList.match(/\b[A-Z]\b/g);
+            if (letters && letters.length > 0) {
+                return letters.map(l => l + ' Line').join(', ');
+            }
+            return routeList;
+        }
+        
+        // Convert MultiPoint to Point features for buffering
+        function normalizeStops(stopsData) {
+            const pointFeatures = [];
+            stopsData.features.forEach(feature => {
+                const lineName = extractLineName(feature.properties.ROUTE_LIST);
+                const hood = feature.properties.L_HOOD || '';
+                const subHood = feature.properties.S_HOOD || '';
+                const displayName = `${lineName} - ${subHood || hood}`.trim().replace(/ - $/, '');
+                
+                if (feature.geometry.type === 'MultiPoint') {
+                    feature.geometry.coordinates.forEach(coord => {
+                        pointFeatures.push({
+                            type: 'Feature',
+                            properties: { 
+                                ...feature.properties,
+                                displayName,
+                                lineName
+                            },
+                            geometry: { type: 'Point', coordinates: coord }
+                        });
+                    });
+                } else if (feature.geometry.type === 'Point') {
+                    pointFeatures.push({
+                        type: 'Feature',
+                        properties: { 
+                            ...feature.properties,
+                            displayName,
+                            lineName
+                        },
+                        geometry: feature.geometry
+                    });
+                }
+            });
+            return { type: 'FeatureCollection', features: pointFeatures };
+        }
+        
+        // ============================================
+        // APPLICATION CODE
+        // ============================================
+        
+        mapboxgl.accessToken = CONFIG.mapboxToken;
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/light-v11',
+            center: CONFIG.mapCenter || [-122.3321, 47.6062],
+            zoom: 11
+        });
+        
+        async function loadData() {
+            try {
+                const [stopsRes, censusRes] = await Promise.all([
+                    fetch(CONFIG.stopsFile),
+                    fetch(CONFIG.censusFile)
+                ]);
+                
+                if (!stopsRes.ok) throw new Error(`Could not load stops file: ${CONFIG.stopsFile}`);
+                if (!censusRes.ok) throw new Error(`Could not load census file: ${CONFIG.censusFile}`);
+                
+                const stopsData = await stopsRes.json();
+                const censusData = await censusRes.json();
+                
+                return { stops: stopsData, census: censusData };
+            } catch (err) {
+                throw err;
+            }
+        }
+        
+        function runAnalysis(stops, census) {
+            // Create buffers around all stops
+            const buffers = stops.features.map(stop => 
+                turf.buffer(stop, CONFIG.bufferRadius, { units: 'kilometers' })
+            ).filter(b => b !== null && b !== undefined);
+            
+            console.log('Valid buffers created:', buffers.length);
+            
+            // Create combined buffer for total population (no double counting)
+            let combinedBuffer = buffers[0];
+            for (let i = 1; i < buffers.length; i++) {
+                try {
+                    if (buffers[i] && combinedBuffer) {
+                        const result = turf.union(combinedBuffer, buffers[i]);
+                        if (result) {
+                            combinedBuffer = result;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Union error at index', i, e);
+                }
+            }
+            
+            // Also keep individual buffers for display
+            const individualBuffers = turf.featureCollection(buffers);
+            
+            console.log('Combined buffer created:', combinedBuffer ? 'yes' : 'no');
+            
+            // Filter census to only polygons with population > 0
+            const validCensus = census.features.filter(block => {
+                const isPolygon = block.geometry?.type === 'Polygon' || block.geometry?.type === 'MultiPolygon';
+                const pop = block.properties?.[CONFIG.populationField] || 0;
+                return isPolygon && pop > 0;
+            });
+            
+            console.log('Census blocks with pop > 0:', validCensus.length);
+            
+            // Clip census blocks to COMBINED buffer (for choropleth display, no double count)
+            const clippedBlocks = [];
+            let maxPop = 0, minPop = Infinity;
+            let totalPopulation = 0;
+            
+            validCensus.forEach(block => {
+                const pop = block.properties[CONFIG.populationField] || 0;
+                try {
+                    const intersection = turf.intersect(block, combinedBuffer);
+                    if (intersection) {
+                        const originalArea = turf.area(block);
+                        const clippedArea = turf.area(intersection);
+                        const proportion = originalArea > 0 ? clippedArea / originalArea : 0;
+                        const adjustedPop = Math.round(pop * proportion);
+                        
+                        intersection.properties = {
+                            ...block.properties,
+                            adjustedPopulation: adjustedPop,
+                            areaProportion: proportion
+                        };
+                        
+                        clippedBlocks.push(intersection);
+                        totalPopulation += adjustedPop;
+                        if (adjustedPop > maxPop) maxPop = adjustedPop;
+                        if (adjustedPop < minPop && adjustedPop > 0) minPop = adjustedPop;
+                    }
+                } catch (e) {
+                    console.warn('Intersection error:', e);
+                }
+            });
+            
+            // Handle edge case where no blocks have population
+            if (minPop === Infinity) minPop = 0;
+            if (maxPop === 0) maxPop = 1;
+            
+            console.log('Clipped blocks with pop:', clippedBlocks.length);
+            console.log('Total population (no double count):', totalPopulation);
+
+            // Calculate population per stop (for reference, will have overlaps)
+            const stopPopulations = stops.features.map(stop => {
+                const name = stop.properties.displayName || 'Unnamed Stop';
+                const lineName = stop.properties.lineName || '';
+                const stopBuffer = turf.buffer(stop, CONFIG.bufferRadius, { units: 'kilometers' });
+                let pop = 0;
+                
+                validCensus.forEach(block => {
+                    try {
+                        const intersection = turf.intersect(block, stopBuffer);
+                        if (intersection) {
+                            const originalArea = turf.area(block);
+                            const clippedArea = turf.area(intersection);
+                            const blockPop = block.properties[CONFIG.populationField] || 0;
+                            pop += Math.round(blockPop * (clippedArea / originalArea));
+                        }
+                    } catch (e) {}
+                });
+                
+                return { name, lineName, population: pop, coords: stop.geometry.coordinates };
+            });
+
+            return {
+                clippedBlocks: turf.featureCollection(clippedBlocks),
+                bufferOutline: combinedBuffer,
+                individualBuffers,
+                stopPopulations,
+                totalPopulation,
+                popRange: { min: minPop, max: maxPop }
+            };
+        }
+        
+        function renderResults(results, stops) {
+            const { clippedBlocks, bufferOutline, stopPopulations, popRange } = results;
+            
+            // Add buffer outline
+            map.addSource('buffer-outline', { type: 'geojson', data: bufferOutline });
+            map.addLayer({
+                id: 'buffer-outline',
+                type: 'line',
+                source: 'buffer-outline',
+                paint: { 'line-color': '#e63946', 'line-width': 2, 'line-dasharray': [3, 2] }
+            });
+            
+            // Add clipped census choropleth
+            map.addSource('census-clipped', { type: 'geojson', data: clippedBlocks });
+            map.addLayer({
+                id: 'census-fill',
+                type: 'fill',
+                source: 'census-clipped',
+                paint: {
+                    'fill-color': [
+                        'interpolate', ['linear'], ['get', 'adjustedPopulation'],
+                        popRange.min, '#fee5d9',
+                        popRange.min + (popRange.max - popRange.min) * 0.25, '#fcae91',
+                        popRange.min + (popRange.max - popRange.min) * 0.5, '#fb6a4a',
+                        popRange.min + (popRange.max - popRange.min) * 0.75, '#de2d26',
+                        popRange.max, '#a50f15'
+                    ],
+                    'fill-opacity': 0.7
+                }
+            });
+            map.addLayer({
+                id: 'census-line',
+                type: 'line',
+                source: 'census-clipped',
+                paint: { 'line-color': '#999', 'line-width': 0.5 }
+            });
+            
+            // Add stop markers
+            map.addSource('stops', { type: 'geojson', data: stops });
+            map.addLayer({
+                id: 'stops-circle',
+                type: 'circle',
+                source: 'stops',
+                paint: {
+                    'circle-radius': 6,
+                    'circle-color': '#1d3557',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#fff'
+                }
+            });
+            
+            // Update stats
+            const totalPop = stopPopulations.reduce((sum, s) => sum + s.population, 0);
+            document.getElementById('totalPop').textContent = totalPop.toLocaleString();
+            document.getElementById('stopCount').textContent = stops.features.length;
+            document.getElementById('blockCount').textContent = clippedBlocks.features.length;
+            document.getElementById('avgPop').textContent = Math.round(totalPop / stops.features.length).toLocaleString();
+            
+            // Populate stop list
+            const sortedStops = [...stopPopulations].sort((a, b) => b.population - a.population);
+            document.getElementById('stopList').innerHTML = sortedStops.map(s => `
+                <div class="stop-item" onclick="flyTo([${s.coords}])">
+                    <span class="stop-name">${s.name}</span>
+                    <span class="stop-pop">${s.population.toLocaleString()}</span>
+                </div>
+            `).join('');
+            
+            // Fit map to data
+            const bbox = turf.bbox(bufferOutline);
+            map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 50 });
+            
+            // Add popup on hover
+            map.on('mousemove', 'census-fill', (e) => {
+                if (e.features.length > 0) {
+                    const props = e.features[0].properties;
+                    const pop = props.adjustedPopulation || 0;
+                    const pct = ((props.areaProportion || 0) * 100).toFixed(1);
+                    map.getCanvas().style.cursor = 'pointer';
+                }
+            });
+            
+            map.on('mouseleave', 'census-fill', () => {
+                map.getCanvas().style.cursor = '';
+            });
+        }
+        
+        function flyTo(coords) {
+            map.flyTo({ center: coords, zoom: 14 });
+        }
+        
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMsg').textContent = msg;
+            document.getElementById('errorMsg').style.display = 'block';
+        }
+        
+        map.on('load', async () => {
+            try {
+                const { stops: rawStops, census } = await loadData();
+                
+                // Debug: Check what we loaded
+                console.log('=== DATA DEBUG ===');
+                console.log('Raw stops features:', rawStops.features.length);
+                console.log('First stop:', rawStops.features[0]);
+                console.log('Census features:', census.features.length);
+                console.log('First census block:', census.features[0]);
+                console.log('Population field value:', census.features[0]?.properties?.[CONFIG.populationField]);
+                
+                // Check geometry types in census
+                const geomTypes = [...new Set(census.features.map(f => f.geometry?.type))];
+                console.log('Census geometry types:', geomTypes);
+                
+                // Check population values
+                const popValues = census.features.slice(0, 10).map(f => ({
+                    pop: f.properties?.[CONFIG.populationField],
+                    type: typeof f.properties?.[CONFIG.populationField]
+                }));
+                console.log('Sample population values:', popValues);
+                
+                const stops = normalizeStops(rawStops);
+                console.log('Normalized stops:', stops.features.length);
+                
+                const results = runAnalysis(stops, census);
+                console.log('Clipped blocks:', results.clippedBlocks.features.length);
+                console.log('Pop range:', results.popRange);
+                console.log('Stop populations:', results.stopPopulations);
+                
+                renderResults(results, stops);
+                document.getElementById('loading').style.display = 'none';
+            } catch (err) {
+                showError(err.message);
+                console.error(err);
+            }
+        });
+        
+        map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    </script>
+</body>
+</html>
