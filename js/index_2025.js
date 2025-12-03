@@ -198,6 +198,16 @@ async function recalculateWalkshed() {
     }
     
     if (stops.features.length === 0) {
+        const emptyData = { 
+            geojson: turf.featureCollection([]), 
+            totalPopulation: 0, 
+            bufferArea: 0,
+            bufferGeom: turf.featureCollection([])
+        };
+        map.getSource('clipped-census').setData(emptyData.geojson);
+        map.getSource('buffer-outline').setData(emptyData.bufferGeom);
+        updateStats(null);
+        cache[cacheKey] = emptyData;
         // Show full city choropleth when no transit selected
         map.getSource('clipped-census').setData(fullCityData.geojson);
         map.getSource('buffer-outline').setData(turf.featureCollection([]));
@@ -434,4 +444,12 @@ map.on('load', async () => {
     }
 });
 
-map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    
+    const hamburger = document.getElementById("hamburger");
+    const menu = document.getElementById("hamburger-menu");
+    
+    hamburger.addEventListener("click", () => {
+        menu.style.display = (menu.style.display === "block") ? "none" : "block";
+    });
+});

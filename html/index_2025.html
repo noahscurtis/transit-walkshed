@@ -4,10 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Seattle Transit Walkshed Analysis</title>
+
+    <!-- Correct absolute GitHub Pages paths -->
+    <link href="/transit-walkshed/css/index_2025.css" rel="stylesheet" />
+
+    <!-- Mapbox + Turf -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
-    <link rel="stylesheet" href="../css/css.css" />
+
 </head>
 <body>
 
@@ -16,13 +21,29 @@
 <div id="processing">⏳ Recalculating...</div>
 
 <div id="controls">
+
+    <div id="hamburger-container">
+        <div id="hamburger">☰</div>
+
+        <div id="hamburger-menu">
+            <div class="menu-item" onclick="location.href='home.html'">Home</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="location.href='index_2025.html'">Walkshed Analysis</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="location.href='population.html'">Population Analysis</div>
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="location.href='citations.html'">Citations</div>
+            <div class="menu-divider"></div>
+        </div>
+    </div>
+
     <h3>🚇 Transit Walksheds</h3>
-    
+
     <h4>Walkshed Distance</h4>
     <label><input type="radio" name="buffer" value="1320" checked> 0.25 mi (5 min walk)</label>
     <label><input type="radio" name="buffer" value="2640"> 0.5 mi (10 min walk)</label>
     <label><input type="radio" name="buffer" value="3960"> 0.75 mi (15 min walk)</label>
-    
+
     <h4>Population Density</h4>
     <div class="color-scale">
         <span style="background:#ffffcc"></span>
@@ -37,7 +58,7 @@
         <span>Low</span>
         <span>High</span>
     </div>
-    
+
     <h4>Transit Lines</h4>
     <label><input type="checkbox" id="show-link" checked>
         <span class="legend-color" style="background:#1565c0"></span>Link Light Rail
@@ -45,15 +66,14 @@
     <label><input type="checkbox" id="show-rr" checked>
         <span class="legend-color" style="background:#c62828"></span>RapidRide Bus
     </label>
-    
+
     <label><input type="checkbox" id="show-stops" checked> Show Stop Points</label>
-    
+
     <div id="stats">
         <h4 style="margin-top:0">Walkshed Statistics</h4>
         <div id="no-selection">Select at least one transit line</div>
         <div id="stats-content">
             <div>Total Population: <span class="stat-value" id="total-pop">--</span></div>
-            <div>% of Seattle: <span class="stat-value" id="pct-seattle">--</span></div>
             <div>Area: <span class="stat-value" id="total-area">--</span> mi²</div>
         </div>
     </div>
