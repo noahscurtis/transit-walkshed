@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seattle Transit Walkshed Analysis</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      background: #f5f7fa;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: white;
+      padding: 60px 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+    }
+    header p {
+      font-size: 1.2rem;
+      max-width: 800px;
+      margin: 0 auto;
+      opacity: 0.9;
+    }
+    .section {
+      max-width: 900px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    h2 {
+      color: #1e3a8a;
+      margin-bottom: 12px;
+    }
+    ul {
+      margin-left: 20px;
+    }
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #555;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Seattle Transit Walkshed Analysis</h1>
+    <p>An interactive spatial analysis exploring the population accessibility of Seattle's rapid transit network.</p>
+  </header>
+
+  <div class="section">
+    <h2>Project Overview</h2>
+    <p>
+      This project is part of the GEOG 328 Final and focuses on creating an interactive web map that visualizes the
+      walkshed surrounding rapid transit stops in Seattle. By combining Turf.js spatial functions, Mapbox GL JS, and
+      demographic datasets, the map identifies populations living within a 15-minute walking radius from each transit
+      stop.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Core Functionality</h2>
+    <p>
+      The interactive map integrates multiple spatial layers—RapidRide routes, Link Light Rail stops, and U.S. Census
+      population blocks—to calculate and display accessibility patterns across the city. A standard 0.75-mile buffer is
+      used to approximate a 15-minute walkshed.
+    </p>
+    <ul>
+      <li>Hover interactions showing stop-specific statistics</li>
+      <li>Population density shading within walkshed boundaries</li>
+      <li>Census data joined to neighborhood basemaps</li>
+      <li>Isochrones and transit layers displayed in a cohesive visual layout</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Data Sources</h2>
+    <ul>
+      <li>Sound Transit Open Transit Data</li>
+      <li>King County GIS Data</li>
+      <li>Seattle Open Data Portal</li>
+      <li>U.S. Census Bureau Population Data</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Spatial Processing Workflow</h2>
+    <ul>
+      <li>Remove duplicate stops and standardize stop naming</li>
+      <li>Convert datasets into GeoJSON format</li>
+      <li>Reproject coordinates into WGS84 (EPSG:4326)</li>
+      <li>Clip census data to Seattle city limits</li>
+      <li>Apply spatial join with neighborhood layers</li>
+      <li>Generate 15-minute walkshed buffers</li>
+      <li>Intersect population blocks with walkshed regions</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Referenced Tools & Documentation</h2>
+    <ul>
+      <li>Mapbox GL JS</li>
+      <li>Turf.js Spatial Analysis</li>
+      <li>Isochrone API</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>Seattle Transit Walkshed Project • GEOG 328</p>
+  </footer>
+</body>
+</html>
