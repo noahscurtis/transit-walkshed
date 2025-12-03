@@ -7,11 +7,12 @@ const map = new mapboxgl.Map({
     zoom: 11
 });
 
-const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
-const linkStopsURL = "../assets/data/stops/link_stops.geojson";
-const populationURL = "../assets/data/population/2020population_4326.geojson";
-const linkLineURL = "../assets/data/lines/link_line.geojson";
-const rrLineURL = "../assets/data/lines/rr_existing.geojson";
+const rrStopsURL = "/transit-walkshed/assets/data/stops/RR_stops_citylimits.geojson";
+const linkStopsURL = "/transit-walkshed/assets/data/stops/link_stops.geojson";
+const populationURL = "/transit-walkshed/assets/data/population/2020population_4326.geojson";
+const linkLineURL = "/transit-walkshed/assets/data/lines/link_line.geojson";
+const rrLineURL = "/transit-walkshed/assets/data/lines/rr_existing.geojson";
+
 
 const colorScale = [
     [0, '#ffffcc'],
@@ -400,10 +401,10 @@ map.on('load', async () => {
 
 map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-document.addEventListener("DOMContentLoaded", () => {
-    const hamburger = document.getElementById("hamburger");
-    if (hamburger) {
-        hamburger.addEventListener("click", () => {
-            const menu = document.getElementById("hamburger-menu");
-            menu.style.display = menu.style.display === "block" ? "none" : "block";
-        });
+const hamburger = document.getElementById("hamburger");
+const menu = document.getElementById("hamburger-menu");
+
+hamburger.addEventListener("click", () => {
+    menu.style.display = (menu.style.display === "block") ? "none" : "block";
+});
+
