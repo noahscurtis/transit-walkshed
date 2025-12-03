@@ -433,16 +433,35 @@ map.on('load', async () => {
                 .addTo(map);
         });
 
-        ['link-stops-layer', 'rr-stops-layer'].forEach(layerId => {
+        ['rr-stops-layer'].forEach(layerId => {
             map.on('click', layerId, (e) => {
                 const props = e.features[0].properties;
-                const type = layerId.includes('link') ? 'Link Light Rail' : 'RapidRide';
+                const type = 'RapidRide';
                 popup.setLngLat(e.lngLat)
                     .setHTML(`
-                        <div class="popup-title">${props.stop_name || 'Transit Stop'}</div>
+                        <div class="popup-title">${props.RAPID_LINE || 'Transit Stop'}</div>
                         <div class="popup-info">
                             <strong>Type:</strong> ${type}<br>
-                            <strong>Stop ID:</strong> ${props.stop_id || 'N/A'}
+                            <strong>Region:</strong> ${props.L_HOOD || 'N/A'}<br>
+                            <strong>Neighborhood:</strong> ${props.S_HOOD || 'N/A'}<br>
+                        </div>
+                    `)
+                    .addTo(map);
+            });
+        });
+
+        ['link-stops-layer'].forEach(layerId => {
+            map.on('click', layerId, (e) => {
+                const props = e.features[0].properties;
+                const type = 'Link Light Rail';
+                popup.setLngLat(e.lngLat)
+                    .setHTML(`
+                        <div class="popup-title">${props.name || 'Transit Stop'}</div>
+                        <div class="popup-info">
+                            <strong>Type:</strong> ${type}<br>
+                            <strong>Stop ID:</strong> ${props.id || 'N/A'}<br>
+                            <strong>Daily Boardings:</strong> ${props.daily_boardings || 'N/A'}<br>
+                            <strong>Opened: </strong> ${props.opened || 'N/A'}<br>
                         </div>
                     `)
                     .addTo(map);
