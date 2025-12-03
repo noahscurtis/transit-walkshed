@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Sources & Citations</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+    .container { max-width: 900px; margin: 0 auto; text-align: center; }
+    h1 { margin-bottom: 10px; }
+    h2 { margin-top: 25px; color: #444; }
+    .source { margin-bottom: 18px; text-align: left; }
+    a { color: #337ab7; }
+
+    /* NEW — minimal indent formatting */
+    .source-detail {
+        margin-left: 40px;
+        display: block;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>Data Sources & Citations</h1>
+<p>This page documents all datasets and tools used in the creation of our Transit Walkshed Analysis project.</p>
+
+<h2>Geospatial Datasets</h2>
+
+<div class="source">
+    <strong>Seattle City Limits (city_limits.geojson)</strong>
+    <div class="source-detail">Source: <a href="https://data-seattlecitygis.opendata.arcgis.com/" target="_blank">Seattle GeoData Portal</a></div>
+    <div class="source-detail">Usage: Used to clip transit stops and population layers to the Seattle boundary.</div>
+</div>
+
+<div class="source">
+    <strong>2020 Census Population (2020population_4326.geojson, census.blocks.geojson)</strong>
+    <div class="source-detail">Source: <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html" target="_blank">U.S. Census Bureau — TIGER/Line 2020 Census Blocks</a></div>
+    <div class="source-detail">Processing: Cleaned and filtered in <code>census.ipynb</code> to extract population values and reproject to EPSG:4326.</div>
+    <div class="source-detail">Usage: Supports population density visualization and statistics for walksheds.</div>
+</div>
+
+<div class="source">
+    <strong>Link Light Rail Data (link_line.geojson, link_stops.geojson)</strong>
+    <div class="source-detail">Source: <a href="https://www.soundtransit.org" target="_blank">Sound Transit GTFS Feed</a></div>
+    <div class="source-detail">Processing: Stops pulled from <code>stops.txt</code>; alignments derived from <code>shapes.txt</code>.</div>
+    <div class="source-detail">Usage: Mapping Link Light Rail segments and stations.</div>
+</div>
+
+<div class="source">
+    <strong>RapidRide Data (rr_existing.geojson, rr_planned.geojson, RR_stops.geojson)</strong>
+    <div class="source-detail">Source: <a href="https://kingcounty.gov/depts/transportation/metro/travel-options/gtfs.aspx" target="_blank">King County Metro GTFS Feed</a></div>
+    <div class="source-detail">Usage: Visualizing RapidRide routes (existing and planned) and associated stops.</div>
+</div>
+
+<div class="source">
+    <strong>Transit Stops Within Seattle (RR_stops_citylimits.geojson)</strong>
+    <div class="source-detail">Source: Derived internally from GTFS stop data and clipped using Seattle city limits boundary.</div>
+    <div class="source-detail">Usage: Supports stop-level accessibility and walkshed calculations.</div>
+</div>
+
+<h2>Tools, Libraries, and Web Services</h2>
+
+<div class="source">
+    <strong>Mapbox GL JS</strong>
+    <div class="source-detail"><a href="https://docs.mapbox.com/mapbox-gl-js/" target="_blank">https://docs.mapbox.com/mapbox-gl-js/</a></div>
+</div>
+
+<div class="source">
+    <strong>Turf.js</strong>
+    <div class="source-detail"><a href="https://turfjs.org/" target="_blank">https://turfjs.org/</a></div>
+</div>
+
+<div class="source">
+    <strong>GitHub Pages</strong>
+    <div class="source-detail">Web hosting and direct serving of GeoJSON datasets</div>
+</div>
+
+<h2>Project Team</h2>
+<p>
+    Created by: <strong>Rayne Thompson, Noah Curtis, Jay Van Lare, Jishnu Kandala</strong><br>
+    GEOG 328 — Web GIS Final Project<br>
+    University of Washington
+</p>
+
+</body>
+</html>
