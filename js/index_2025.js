@@ -400,7 +400,10 @@ map.on('load', async () => {
 
 map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-document.getElementById("hamburger").addEventListener("click", () => {
-    const menu = document.getElementById("hamburger-menu");
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
-});
+document.addEventListener("DOMContentLoaded", () => {
+    const hamburger = document.getElementById("hamburger");
+    if (hamburger) {
+        hamburger.addEventListener("click", () => {
+            const menu = document.getElementById("hamburger-menu");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        });
