@@ -7,12 +7,11 @@ const map = new mapboxgl.Map({
     zoom: 11
 });
 
-const rrStopsURL = "/transit-walkshed/assets/data/stops/RR_stops_citylimits.geojson";
-const linkStopsURL = "/transit-walkshed/assets/data/stops/link_stops.geojson";
-const populationURL = "/transit-walkshed/assets/data/population/2020population_4326.geojson";
-const linkLineURL = "/transit-walkshed/assets/data/lines/link_line.geojson";
-const rrLineURL = "/transit-walkshed/assets/data/lines/rr_existing.geojson";
-
+const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
+const linkStopsURL = "../assets/data/stops/link_stops.geojson";
+const populationURL = "../assets/data/population/population20_50.geojson";
+const linkLineURL = "../assets/data/lines/link_line.geojson";
+const rrLineURL = "../assets/data/lines/rr_existing.geojson";
 
 const colorScale = [
     [0, '#ffffcc'],
@@ -25,8 +24,10 @@ const colorScale = [
 ];
 
 let populationData, rrStopsData, linkStopsData, linkLineData, rrLineData;
+let seattleTotalPop = 0;
 let currentBuffer = 1320;
 let cache = {};
+let fullCityData = null;
 
 async function loadJSON(url) {
     const res = await fetch(url);
@@ -55,9 +56,9 @@ function createUnifiedBuffer(stops, radius) {
         console.warn('No stops provided for buffer creation');
         return null;
     }
-
+    
     console.log(`Creating buffer for ${stops.features.length} stops at ${radius} feet`);
-
+    
     const buffers = [];
     stops.features.forEach((stop, i) => {
         try {
@@ -67,11 +68,11 @@ function createUnifiedBuffer(stops, radius) {
             console.warn(`Buffer failed for stop ${i}:`, e);
         }
     });
-
+    
     console.log(`Created ${buffers.length} individual buffers`);
-
+    
     if (buffers.length === 0) return null;
-
+    
     let unified = buffers[0];
     for (let i = 1; i < buffers.length; i++) {
         try {
@@ -146,7 +147,7 @@ function getSelectedStops() {
     return { stops: turf.featureCollection(features), showLink, showRR };
 }
 
-function updateStats(data) {
+function updateStats(data, isFullCity = false) {
     const statsContent = document.getElementById('stats-content');
     const noSelection = document.getElementById('no-selection');
     
@@ -161,9 +162,16 @@ function updateStats(data) {
     
     document.getElementById('total-pop').textContent = data.totalPopulation.toLocaleString();
     document.getElementById('total-area').textContent = data.bufferArea.toFixed(2);
+    
+    if (isFullCity) {
+        document.getElementById('pct-seattle').textContent = '100%';
+    } else {
+        const pctSeattle = seattleTotalPop > 0 
+            ? ((data.totalPopulation / seattleTotalPop) * 100).toFixed(1)
+            : '0';
+        document.getElementById('pct-seattle').textContent = pctSeattle + '%';
+    }
 }
-
-
 
 function updateStopLayerVisibility() {
     const showStops = document.getElementById('show-stops').checked;
@@ -200,6 +208,10 @@ async function recalculateWalkshed() {
         map.getSource('buffer-outline').setData(emptyData.bufferGeom);
         updateStats(null);
         cache[cacheKey] = emptyData;
+        // Show full city choropleth when no transit selected
+        map.getSource('clipped-census').setData(fullCityData.geojson);
+        map.getSource('buffer-outline').setData(turf.featureCollection([]));
+        updateStats(fullCityData, true);
         return;
     }
     
@@ -235,6 +247,38 @@ map.on('load', async () => {
         ]);
 
         document.getElementById('loading').textContent = 'Processing walksheds...';
+
+        // Calculate Seattle's total population
+        seattleTotalPop = populationData.features.reduce((sum, tract) => {
+            return sum + (tract.properties.TOTAL_POPULATION || 0);
+        }, 0);
+        console.log(`Seattle total population: ${seattleTotalPop.toLocaleString()}`);
+
+        // Pre-calculate full city data for when no transit is selected
+        const fullCityFeatures = populationData.features.map(tract => {
+            const areaSqMi = turf.area(tract) / 2589988.11;
+            const pop = tract.properties.TOTAL_POPULATION || 0;
+            const density = areaSqMi > 0 ? pop / areaSqMi : 0;
+            return {
+                ...tract,
+                properties: {
+                    ...tract.properties,
+                    clipped_population: pop,
+                    clipped_area_sqmi: parseFloat(areaSqMi.toFixed(4)),
+                    density: Math.round(density)
+                }
+            };
+        });
+        
+        const totalArea = populationData.features.reduce((sum, tract) => {
+            return sum + turf.area(tract) / 2589988.11;
+        }, 0);
+        
+        fullCityData = {
+            geojson: turf.featureCollection(fullCityFeatures),
+            totalPopulation: seattleTotalPop,
+            bufferArea: totalArea
+        };
 
         const { stops } = getSelectedStops();
         const initialBuffer = createUnifiedBuffer(stops, 1320);
@@ -343,7 +387,8 @@ map.on('load', async () => {
                     <div class="popup-info">
                         <strong>Population:</strong> ${props.clipped_population?.toLocaleString() || 'N/A'}<br>
                         <strong>Density:</strong> ${props.density?.toLocaleString() || 'N/A'} /mi²<br>
-                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²
+                        <strong>Area:</strong> ${props.clipped_area_sqmi || 'N/A'} mi²<br>
+                        <strong>Growth Rate:</strong> ${props.avg_growth_pct ? (props.avg_growth_pct * 100).toFixed(2) + '%' : 'N/A'} /yr
                     </div>
                 `)
                 .addTo(map);
