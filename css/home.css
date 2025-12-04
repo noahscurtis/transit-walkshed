@@ -1,3 +1,8 @@
+/* This css file controls the formatting and styling of the home.html file for the transit walkshed project.
+it includes styles for the various text content, layout, structure, and buttons on the home page.
+The style is a monolithic structure with a single column in the center of the screen.
+This allows any device regardless of screen width to easily view and navigate the home page. */
+
 body {
     margin: 0;
     padding: 0;

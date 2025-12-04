@@ -1,18 +1,20 @@
-mapboxgl.accessToken = 'pk.eyJ1IjoidHRob21wNCIsImEiOiJjbWg4ZnZ4cTUxMGQ5MmtwdWR4MTNnbm40In0.JHg_sbayM5UCtQkYhC2LEA';
+mapboxgl.accessToken = 'pk.eyJ1IjoiamthbmRhIiwiYSI6ImNtaGN5c3JwbDIyNDUybHBxM2VweHBrNzYifQ.Akume5yUr5MZyYxPQq9EjA';
 
 const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/light-v10',
+    style: 'mapbox://styles/jkanda/cmip87mo700kt01sn266lhy2l',
     center: [-122.33, 47.62],
     zoom: 11
 });
 
-const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
-const linkStopsURL = "../assets/data/stops/link_stops.geojson";
-const populationURL = "../assets/data/population/population20_50.geojson";
-const linkLineURL = "../assets/data/lines/link_line.geojson";
-const rrLineURL = "../assets/data/lines/rr_existing.geojson";
+// data file URLS
+const rrStopsURL = "../assets/stops/RR_stops_citylimits.geojson";
+const linkStopsURL = "../assets/stops/link_stops.geojson";
+const populationURL = "../assets/population/population20_50.geojson";
+const linkLineURL = "../assets/lines/link_line.geojson";
+const rrLineURL = "../assets/lines/rr_existing.geojson";
 
+// choropleth color scale
 const colorScale = [
     [0, '#ffffcc'],
     [2500, '#c7e9b4'],
@@ -29,15 +31,20 @@ let currentBuffer = 1320;
 let cache = {};
 let fullCityData = null;
 
+// function to load geojson files
 async function loadJSON(url) {
     const res = await fetch(url);
     return res.json();
 }
 
+// cache key generator to retrieve the specified walkshed data
 function getCacheKey(showLink, showRR, radius) {
     return `${showLink ? 'L' : ''}-${showRR ? 'R' : ''}-${radius}`;
 }
 
+// calculate population for clipped census tract
+// assumes population is uniformly distributed and
+// multiplies the % of area within the buffer * total population of tract
 function calculateClippedPopulation(censusFeature, clippedFeature) {
     try {
         const originalArea = turf.area(censusFeature);
@@ -51,6 +58,8 @@ function calculateClippedPopulation(censusFeature, clippedFeature) {
     }
 }
 
+// create unified buffer around all stops
+// goes through each buffer object and joins them together
 function createUnifiedBuffer(stops, radius) {
     if (!stops.features || stops.features.length === 0) {
         console.warn('No stops provided for buffer creation');
@@ -87,6 +96,7 @@ function createUnifiedBuffer(stops, radius) {
     return unified;
 }
 
+// gets buffer area and population of census tracts within buffer
 function clipCensusToBuffer(census, buffer) {
     const clippedFeatures = [];
     let totalPop = 0;
@@ -136,6 +146,7 @@ function clipCensusToBuffer(census, buffer) {
     };
 }
 
+// get stops based off of user category toggle, shows link and or rapid ride stops
 function getSelectedStops() {
     const showLink = document.getElementById('show-link').checked;
     const showRR = document.getElementById('show-rr').checked;
@@ -147,6 +158,7 @@ function getSelectedStops() {
     return { stops: turf.featureCollection(features), showLink, showRR };
 }
 
+// calculates population statistics based off the spatial analysis
 function updateStats(data, isFullCity = false) {
     const statsContent = document.getElementById('stats-content');
     const noSelection = document.getElementById('no-selection');
@@ -173,6 +185,7 @@ function updateStats(data, isFullCity = false) {
     }
 }
 
+// update visibility of stop layers based on user selection
 function updateStopLayerVisibility() {
     const showStops = document.getElementById('show-stops').checked;
     const showLink = document.getElementById('show-link').checked;
@@ -184,12 +197,14 @@ function updateStopLayerVisibility() {
         showStops && showRR ? 'visible' : 'none');
 }
 
+// clears walkshed analysis and returns to full choropleth map
 function clear() {
     map.getSource('clipped-census').setData(fullCityData.geojson);
     map.getSource('buffer-outline').setData(turf.featureCollection([]));
     updateStats(fullCityData, true);
 }
 
+// calculates walkshed based on selected stops and buffer distance
 async function recalculateWalkshed() {
     const { stops, showLink, showRR } = getSelectedStops();
     const radius = currentBuffer;
@@ -240,6 +255,8 @@ async function recalculateWalkshed() {
     document.getElementById('processing').style.display = 'none';
 }
 
+// initiates map, loads data and creates layers and nodes based off of stops and data
+// also sets up event listeners for user interactivity with map nodes
 map.on('load', async () => {
     
     try {
