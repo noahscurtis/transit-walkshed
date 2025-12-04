@@ -6,161 +6,10 @@
     <title>Data Sources & Citations</title>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        #map {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            filter: blur(3px);
-            z-index: 1;
-        }
-
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.5);
-            z-index: 10;
-            overflow-y: auto;
-        }
-
-        .content {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 60px 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            font-size: 2.2rem;
-            color: #0060df;
-            margin: 0 0 10px 0;
-        }
-
-        .header p {
-            font-size: 1rem;
-            color: #555;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .back-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            font-size: 0.95rem;
-            font-weight: bold;
-            color: white;
-            background: #0060df;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            box-shadow: 0 4px 12px rgba(0, 166, 81, 0.3);
-            transition: all 0.2s ease;
-            margin-top: 20px;
-        }
-
-        .back-btn:hover {
-            background: #0060df;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 166, 81, 0.4);
-        }
-
-        .section {
-            background: white;
-            padding: 25px 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-        }
-
-        .section h2 {
-            color: #0060df;
-            margin: 0 0 15px 0;
-            font-size: 1.3rem;
-        }
-
-        .source {
-            margin-bottom: 18px;
-            padding-bottom: 18px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .source:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
-
-        .source strong {
-            color: #333;
-            font-size: 1rem;
-        }
-
-        .source-detail {
-            margin-left: 0;
-            margin-top: 6px;
-            display: block;
-            color: #555;
-            font-size: 0.9rem;
-        }
-
-        .source-detail code {
-            background: #f0f0f0;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.85rem;
-        }
-
-        a {
-            color: #0060df;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px 20px;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8rem;
-            }
-
-            .content {
-                padding: 40px 15px;
-            }
-
-            .section {
-                padding: 20px;
-            }
-        }
-    </style>
+    <link href="../css/citations.css" rel="stylesheet" />
 </head>
 <body>
-
 <div id="map"></div>
-
 <div id="overlay">
     <div class="content">
         <div class="header">
@@ -249,7 +98,7 @@
             <p style="margin: 0; color: #444;">
                 <strong>Rayne:</strong> Base functionality of the turf buffering, population data, and website functionality was done manually. AI was used to perform the population calculations within the buffer zones, and to add enhanced website interactivity, optimizing for design and usability. AI was also consulted during the data cleaning portion in Jupyter to find the best workflow for data cleanliness and accuracy. </strong><br>
                 <strong>Jay: Spatial analysis for populaion, cleaning and organizing datasets, and basic website building was done manually. AI was used for basic syntax errors, some javascript calculations, and stylistic choices. AI was helpful in troubleshooting problems/bugs that I encountered. </strong><br>
-                <strong>Noah: </strong><br>
+                <strong>Noah: </strong> Used AI for minor styling purposes, this includes creating website elements such as buttons and containers/boxes to look appealing and user friendly. I did model some of my code after pre-existing code in our codebase which may have been created by AI<br>
                 <strong>Jishnu: </strong> Creating the initial HTML structure and CSS styling for the web pages was done manually. Then AI was used to optimize the code for better responsiveness and user experience, by suggesting improvements to layout with design elements and interactive features that were taken into account when creating the format of the final webpage. </strong><br>
             </p>
         </div>
@@ -262,7 +111,6 @@
 
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoidHRob21wNCIsImEiOiJjbWg4ZnZ4cTUxMGQ5MmtwdWR4MTNnbm40In0.JHg_sbayM5UCtQkYhC2LEA';
-    
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/light-v10',
