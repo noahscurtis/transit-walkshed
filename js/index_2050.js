@@ -1,19 +1,21 @@
-mapboxgl.accessToken = 'pk.eyJ1IjoidHRob21wNCIsImEiOiJjbWg4ZnZ4cTUxMGQ5MmtwdWR4MTNnbm40In0.JHg_sbayM5UCtQkYhC2LEA';
+mapboxgl.accessToken = 'pk.eyJ1IjoiamthbmRhIiwiYSI6ImNtaGN5c3JwbDIyNDUybHBxM2VweHBrNzYifQ.Akume5yUr5MZyYxPQq9EjA';
 
 const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/light-v10',
+    style: 'mapbox://styles/jkanda/cmip87mo700kt01sn266lhy2l',
     center: [-122.33, 47.62],
     zoom: 11
 });
 
-const populationURL = "../assets/data/population/population20_50.geojson";
-const linkLineURL = "../assets/data/lines/link_line.geojson";
-const linkStopsURL = "../assets/data/stops/link_stops.geojson";
-const rrLineURL = "../assets/data/lines/rr_existing.geojson";
-const rrStopsURL = "../assets/data/stops/RR_stops_citylimits.geojson";
-const rrPlannedURL = "../assets/data/lines/rr_planned.geojson";
+// data file URLS
+const populationURL = "../assets/population/population20_50.geojson";
+const linkLineURL = "../assets/lines/link_line.geojson";
+const linkStopsURL = "../assets/stops/link_stops.geojson";
+const rrLineURL = "../assets/lines/rr_existing.geojson";
+const rrStopsURL = "../assets/stops/RR_stops_citylimits.geojson";
+const rrPlannedURL = "../assets/lines/rr_planned.geojson";
 
+// choropleth color scale
 const colorScale = [
     [0, '#ffffcc'],
     [2500, '#c7e9b4'],
@@ -30,15 +32,21 @@ let currentBuffer = 1320;
 let cache = {};
 let fullCityData = null;
 
+// function to load geojson files
 async function loadJSON(url) {
     const res = await fetch(url);
     return res.json();
 }
 
+// cache key generator to retrieve the specified walkshed data
 function getCacheKey(showLink, showRR, radius) {
     return `${showLink ? 'L' : ''}-${showRR ? 'R' : ''}-${radius}`;
 }
 
+
+// calculate population for clipped census tract
+// assumes population is uniformly distributed and
+// multiplies the % of area within the buffer * total population of tract
 function calculateClippedPopulation(censusFeature, clippedFeature) {
     try {
         const originalArea = turf.area(censusFeature);
@@ -52,6 +60,8 @@ function calculateClippedPopulation(censusFeature, clippedFeature) {
     }
 }
 
+// create unified buffer around all stops
+// goes through each buffer object and joins them together
 function createUnifiedBuffer(stops, lines, radius) {
     const buffers = [];
     
@@ -97,6 +107,7 @@ function createUnifiedBuffer(stops, lines, radius) {
     return unified;
 }
 
+// gets buffer area and population of census tracts within buffer
 function clipCensusToBuffer(census, buffer) {
     const clippedFeatures = [];
     let totalPop = 0;
@@ -146,6 +157,7 @@ function clipCensusToBuffer(census, buffer) {
     };
 }
 
+// get stops based off of user category toggle, shows link and or rapid ride stops
 function getSelectedStopsAndLines() {
     const showLink = document.getElementById('show-link').checked;
     const showRR = document.getElementById('show-rr').checked;
@@ -165,6 +177,7 @@ function getSelectedStopsAndLines() {
     };
 }
 
+// calculates population statistics based off the spatial analysis
 function updateStats(data, isFullCity = false) {
     const statsContent = document.getElementById('stats-content');
     const noSelection = document.getElementById('no-selection');
@@ -191,6 +204,7 @@ function updateStats(data, isFullCity = false) {
     }
 }
 
+// toggles metro line visibility
 function updateLineVisibility() {
     const showLink = document.getElementById('show-link').checked;
     const showRR = document.getElementById('show-rr').checked;
@@ -203,12 +217,14 @@ function updateLineVisibility() {
     map.setLayoutProperty('rr-planned-layer', 'visibility', showRR ? 'visible' : 'none');
 }
 
+// clears walkshed analysis and returns to full choropleth map
 function clear() {
     map.getSource('clipped-census').setData(fullCityData.geojson);
     map.getSource('buffer-outline').setData(turf.featureCollection([]));
     updateStats(fullCityData, true);
 }
 
+// calculates walkshed based on selected stops and buffer distance
 async function recalculateWalkshed() {
     const { stops, lines, showLink, showRR } = getSelectedStopsAndLines();
     const radius = currentBuffer;
@@ -248,6 +264,8 @@ async function recalculateWalkshed() {
     document.getElementById('processing').style.display = 'none';
 }
 
+// initiates map, loads data and creates layers and nodes based off of stops and data
+// also sets up event listeners for user interactivity with map nodes
 map.on('load', async () => {
 
     try {
@@ -433,16 +451,35 @@ map.on('load', async () => {
                 .addTo(map);
         });
 
-        ['link-stops-layer', 'rr-stops-layer'].forEach(layerId => {
+        ['rr-stops-layer'].forEach(layerId => {
             map.on('click', layerId, (e) => {
                 const props = e.features[0].properties;
-                const type = layerId.includes('link') ? 'Link Light Rail' : 'RapidRide';
+                const type = 'RapidRide';
                 popup.setLngLat(e.lngLat)
                     .setHTML(`
-                        <div class="popup-title">${props.stop_name || 'Transit Stop'}</div>
+                        <div class="popup-title">${props.RAPID_LINE || 'Transit Stop'}</div>
                         <div class="popup-info">
                             <strong>Type:</strong> ${type}<br>
-                            <strong>Stop ID:</strong> ${props.stop_id || 'N/A'}
+                            <strong>Region:</strong> ${props.L_HOOD || 'N/A'}<br>
+                            <strong>Neighborhood:</strong> ${props.S_HOOD || 'N/A'}<br>
+                        </div>
+                    `)
+                    .addTo(map);
+            });
+        });
+
+        ['link-stops-layer'].forEach(layerId => {
+            map.on('click', layerId, (e) => {
+                const props = e.features[0].properties;
+                const type = 'Link Light Rail';
+                popup.setLngLat(e.lngLat)
+                    .setHTML(`
+                        <div class="popup-title">${props.name || 'Transit Stop'}</div>
+                        <div class="popup-info">
+                            <strong>Type:</strong> ${type}<br>
+                            <strong>Stop ID:</strong> ${props.id || 'N/A'}<br>
+                            <strong>Daily Boardings:</strong> ${props.daily_boardings || 'N/A'}<br>
+                            <strong>Opened: </strong> ${props.opened || 'N/A'}<br>
                         </div>
                     `)
                     .addTo(map);
