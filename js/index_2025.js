@@ -356,7 +356,7 @@ map.on('load', async () => {
             type: 'line',
             source: 'link-line',
             paint: {
-                'line-color': '#1565c0',
+                'line-color': '#00A651',
                 'line-width': 3,
                 'line-opacity': 0.9
             }
@@ -368,7 +368,7 @@ map.on('load', async () => {
             source: 'link-stops',
             paint: {
                 'circle-radius': 6,
-                'circle-color': '#1565c0',
+                'circle-color': '#00A651',
                 'circle-stroke-color': '#fff',
                 'circle-stroke-width': 2
             }
